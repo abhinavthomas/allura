@@ -1,0 +1,119 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% extends 'forgewiki:templates/wiki/master.html' %}
+{% do g.register_forge_css('css/forge/hilite.css', compress=False) %}
+{% import 'allura:templates/jinja_master/lib.html' as lib with context %}
+
+{% block title %}{{c.project.name}} / {{c.app.config.options.mount_label}} / {{page.title}}{% endblock %}
+
+{% block header %}{{page.title}}{% if page['deleted'] %}<span> (deleted)</span>{% endif %}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .hidden { display: none }
+  a.notfound { color: #f00; }
+</style>
+{% endblock %}
+
+{% block head %}
+<link rel="alternate" type="application/rss+xml" title="Page RSS" href="feed.rss"/>
+<link rel="alternate" type="application/atom+xml" title="Page Atom" href="feed.atom"/>
+<link rel="alternate" type="application/rss+xml" title="Wiki RSS" href="../feed.rss"/>
+<link rel="alternate" type="application/atom+xml" title="Wiki Atom" href="../feed.atom"/>
+{% endblock %}
+{% block body_attrs %} class="wiki-{{(page.title).replace(' ','_')}}"{% endblock %}
+
+{% block actions %}
+  {% if not page['deleted'] %}
+    {% if c.user and c.user != c.user.anonymous() %}
+      {{ g.icons['edit'].render(href='edit', show_title=True) }}
+    {% endif %}
+      {{ g.icons['history'].render(href='history') }}
+  {% elif h.has_access(page, 'delete')() %}
+    {{ g.icons['undelete'].render(extra_css='post-link') }}
+    <div class="confirmation_dialog" style="display:none">
+        {{ g.icons['close'].render(tag='b', extra_css='close') }}
+        <h1>Confirm page restoration</h1>
+        <p>
+            Do you really want to restore the page?
+            You can undo it later.
+        </p>
+        <p>
+            <button class="continue_confirm" href="./undelete">Yes</button>
+            <input type="button" value="Cancel" class="cancel_confirmation close">
+        </p>
+    </div>
+
+  {% endif %}
+  {% if c.user and c.user != c.user.anonymous() %}
+    {{c.subscribe_form.display(value=page_subscribed, action='subscribe', style='icon')}}
+  {% endif %}
+  {{ g.icons['feed'].render(href='feed', title='RSS') }}
+  {{ g.icons['search'].render(href='../search') }}
+{% endblock %}
+
+{% block wiki_content %}
+{{page.html_text}}
+{% endblock %}
+
+{% block wiki_meta %}
+<div class="editbox">
+  {% if page.labels %}
+  <div class="grid-9">
+    <label class="simple">Labels: </label>
+    {% for label in page.labels %}
+      {% if label != '' %}
+        <span><a href="{{c.app.url}}search/?q=labels_t:%22{{label}}%22&parser=standard">{{label}} ({{page.artifacts_labeled_with(label, page.app_config).count()}})</a></span>
+      {% endif %}
+    {% endfor %}
+  </div>
+  {% endif %}
+  <div class="grid-9 gravatar sm">
+    <label class="simple">Authors: </label>
+    {% for author in page.authors() %}
+      {{lib.user_link(author, avatar=True)}}
+    {% endfor %}
+  </div>
+   {% if page.attachments %}
+    <div class="grid-18">
+        <strong>Attachments</strong>
+        {% for att in page.attachments %}
+            <div>
+                <a href="{{att.url()}}">{{att.filename}}</a>
+                ({{att.length}} bytes)
+            </div>
+        {% endfor %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block after_content %}
+  <hr style="margin-top: 1em; margin-bottom: 2em; clear:both;">
+  {{lib.related_artifacts(page)}}
+  {% if page.discussion_thread and c.app.show_discussion %}
+      {% if h.has_access(page, 'edit')() or page.discussion_thread.num_replies > 0 %}
+          <div id="discussion_holder"><h2>Discussion</h2>
+          {% set thread = page.discussion_thread %}
+          <div>{{ c.thread.display(value=thread,page=pagenum,limit=limit,count=count) }}</div>
+          </div>
+      {% endif %}
+  {% endif %}
+  {{c.confirmation.display(content='')}}
+{% endblock %}

@@ -1,0 +1,43 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% set hide_left_bar = True %}
+{% extends g.theme.master %}
+
+{% block title %}{{user.display_name}} / Profile{% endblock %}
+
+{% block header %}Send a Message{% endblock %}
+
+{% block head %}
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="feed.rss">
+  <link rel="alternate" type="application/atom+xml" title="Atom" href="feed.atom">
+{% endblock %}
+{% block actions %}
+  {{ g.icons['feed'].render(href=c.app.url + 'feed.rss', title='Follow') }}
+{% endblock %}
+
+{% block content %}
+    <div class="content">
+    {%if not expire_time%}
+        {{c.form.display(method = 'POST', action='send_user_message', user=user)}}
+    {% else %}
+      <h2>Sorry, messaging is rate-limited.</h2>
+      <p>You can send another message in: {{expire_time}}</p>
+    {% endif %}
+    </div>
+{% endblock %}

@@ -1,0 +1,192 @@
+
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% extends 'allura:templates/repo/repo_master.html' %}
+{% import 'allura:templates/jinja_master/lib.html' as lib with context %}
+
+{% do g.register_forge_css('css/forge/diff.css') %}
+
+{% block title %}
+  {{c.project.name}} / {{c.app.config.options.mount_label}} / Commit {{commit.shorthand_id()}}
+{% endblock %}
+
+{% block header -%}
+Commit <a href="{{commit.url()}}">{{commit.shorthand_id()}}</a> {{commit_labels(commit)}}
+{%- endblock %}
+
+{% block actions %}
+{{ lib.maximize_content_button() }}
+{{ g.icons['history'].render(href='{}log/'.format(commit.url()), show_title=True) }}
+{% endblock %}
+
+{% block body_top_js %}
+{{ super() }}
+  <script type="text/javascript">
+    var MAX_REQUESTS = 5; // max simultaneous load requests
+    var WAIT_FOR = 500;   // wait for 100ms when requests queue is full and try again
+    var diff_queue = [];  // queue of diffs waiting for load
+    var called_count = 0; // count of running load requests
+  </script>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+  <script type="text/javascript">
+    function ld(diff, callback) {
+      $(diff.selector).load(encodeURI(diff.url), callback);
+    }
+
+    function load_diff() {
+      if (called_count >= MAX_REQUESTS || diff_queue.length == 0) {
+        return;
+      }
+      called_count++;
+      var diff = diff_queue.shift();
+      ld(diff, function(response, status, xhr) {
+        if (status == 'error') {
+          if (xhr.status == 500) {
+            // retry once
+            ld(diff, function(response, status, xhr) {
+              if (status == 'error') {
+                $(this).text('Can\'t load diff');
+              }
+              called_count--;
+            });
+          } else {
+            $(this).text('Can\'t load diff');
+            called_count--;
+          }
+        } else {
+          called_count--;
+        }
+        if (diff_queue.length == 0) {
+          clearInterval(document.diff_queue_timer);
+        }
+      });
+    }
+    $(document).ready(function() {
+      document.diff_queue_timer = setInterval(load_diff, WAIT_FOR);
+
+      $('.switch-diff-format-link').click(function() {
+        var diformat = $(this).attr('data-diformat');
+        var href = $(this).attr('href');
+        var diffid = $(this).attr('data-diffid');
+        self = $(this);
+        if (diformat == 'sidebyside') {
+          href = href + '&diformat=regular';
+          $('#' + diffid).load(href, function() {
+            self.attr('data-diformat', 'regular');
+            self.text('Switch to side-by-side view');
+          });
+        } else {
+          href = href + '&diformat=sidebyside';
+          $('#' + diffid).load(href, function() {
+            self.attr('data-diformat', 'sidebyside');
+            self.text('Switch to unified view');
+          });
+        }
+        return false;
+      });
+    });
+  </script>
+{% endblock %}
+
+{% block content %}
+{{c.revision_widget.display(value=commit, prev=prev, next=next)}}
+{{c.page_list.display(page=page, limit=limit, count=count)}}
+<table>
+  <tbody>
+    {% for type, file, _, _ in artifacts %}
+    <tr>
+        <td>{{ type }}
+            {% if type in ('copied', 'renamed') and file.ratio != 1 %}(with changes){% endif %}
+        </td>
+        <td><a href="#diff-{{loop.index}}">
+            {% if type == 'copied' %}
+              {{ '%s -> %s' % (h.really_unicode(file.old), h.really_unicode(file.new)) }}
+            {% elif type == 'renamed' %}
+              {{ '%s -> %s' % (h.really_unicode(file.old), h.really_unicode(file.new)) }}
+            {% else %}
+              {{h.really_unicode(file)}}
+            {% endif %}
+        </a></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+    {% for type, file, obj_type, is_text in artifacts %}
+        <div class="inline-diff">
+            <h6>
+            {% if type in ('added', 'changed') %}
+                {% set file_url = commit.url() + 'tree/' + h.urlquote(h.really_unicode(file)) %}
+                <a href="{{ file_url }}">{{h.really_unicode(file)}}</a>
+                {% if obj_type != 'tree' and is_text %}
+                    {% set diff_url = file_url + '?barediff=' + (prev[0]._id if prev else '') %}
+                    <a class="commit-diff-link" href="{{ diff_url.replace('?barediff=', '?diff=') }}">Diff</a>
+                    <a class="commit-diff-link switch-diff-format-link" data-diformat="{{session.diformat}}" data-diffid="diff-{{loop.index}}" href="{{ diff_url }}">Switch to {{'unified' if session.diformat == 'sidebyside' else 'side-by-side'}} view</a>
+                {% endif %}
+            {% elif type == 'removed' %}
+                {% set file_url = prev[0].url() + 'tree/' + h.urlquote(h.really_unicode(file)) %}
+                <a href="{{ file_url }}">{{h.really_unicode(file)}}</a>
+            {% elif type in ('copied', 'renamed') %}
+                <a href="{{prev[0].url()}}tree/{{h.urlquote(h.really_unicode(file.old))}}">{{h.really_unicode(file.old)}}</a>
+                to
+                {% set new_file_url = commit.url() + 'tree/' + h.urlquote(h.really_unicode(file.new)) %}
+                <a href="{{ new_file_url }}">{{h.really_unicode(file.new)}}</a>
+                {% if file.ratio != 1 %}
+                    {% set diff_url = new_file_url + '?barediff=' + (prev[0]._id if prev else '') + '&prev_file=' + h.urlquote(h.really_unicode(file['old'])) %}
+                    <a class="commit-diff-link" href="{{ diff_url.replace('?barediff=', '?diff=') }}">Diff</a>
+                    <a class="commit-diff-link switch-diff-format-link" data-diformat="{{session.diformat}}" data-diffid="diff-{{loop.index}}" href="{{diff_url}}">Switch to {{'unified' if session.diformat == 'sidebyside' else 'side-by-side'}} view</a>
+                {% endif %}
+            {% endif %}
+            </h6>
+            <div id="diff-{{loop.index}}" class="inline-diff-body">
+                {% if type == 'removed' %}
+                  <span class="empty-diff">File was removed.</span>
+                {% elif type in ('copied', 'renamed') %}
+                  {% if file.ratio == 1 %}
+                    <span class="empty-diff">File was {{ type }}.</span>
+                  {% else %}
+                    <img src="{{g.forge_static('images/spinner.gif')}}" class="loading_icon" alt="Loading..."/>
+                    <script type="text/javascript">
+                      diff_queue.push({
+                        selector: '#diff-{{loop.index}}',
+                        url: '{{diff_url}}'
+                      });
+                    </script>
+                  {% endif %}
+                {% elif obj_type == 'tree' %}
+                    <span class="empty-diff">Directory.</span>
+                {% elif not is_text %}
+                    <span class="empty-diff">Binary file was {{ type }}.</span>
+                {% else %}
+                    <img src="{{g.forge_static('images/spinner.gif')}}" class="loading_icon" alt="Loading..."/>
+                    <script type="text/javascript">
+                      diff_queue.push({
+                        selector: '#diff-{{loop.index}}',
+                        url: '{{diff_url}}'
+                      });
+                    </script>
+                {% endif %}
+            </div>
+        </div>
+    {% endfor %}
+    {{ c.page_list.display(page=page, limit=limit, count=count) }}
+{% endblock %}

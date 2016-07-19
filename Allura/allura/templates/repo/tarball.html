@@ -1,0 +1,108 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% extends 'allura:templates/repo/repo_master.html' %}
+{% block title %}
+{{c.project.name}} / {{c.app.config.options.mount_label}} / Commit {{commit.shorthand_id()}}
+{% endblock %}
+
+{% block header -%}
+Commit <a href="{{commit.url()}}">{{commit.shorthand_id()}}</a> {{commit_labels(commit)}}
+{%- endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script type="text/javascript">$(function() {
+    {% set path = request.params.get('path', '') %}
+    {% if status == 'complete' %}
+        {% if 'no-redirect' not in request.params %}
+            $(document).ready(function() {
+                window.location.href = '{{c.app.repo.tarball_url(revision, path)}}';
+            });
+        {% endif %}
+    {% elif status in ('ready', 'busy') %}
+        $('.spinner').show()
+        var delay = 500;
+        function check_status() {
+            $.get('{{commit.url()}}tarball_status?path={{path}}', function(data) {
+                if (data.status === 'complete') {
+                    $('.spinner').hide()
+                    $('#snapshot_status h2').hide();
+                    $('#snapshot_status h2.complete').show();
+                    {% if 'no-redirect' not in request.params %}
+                        window.location.href = '{{c.app.repo.tarball_url(revision, path)}}';
+                    {% endif %}
+                } else {
+                    if (data.status === 'ready' || data.status === 'busy') {
+                        // keep waiting
+                        $('#snapshot_status h2').hide();
+                        $('#snapshot_status h2.busy').show();
+                    } else {
+                        // something went wrong
+                        $('.spinner').hide()
+                        $('#snapshot_status h2').hide();
+                        $('#snapshot_status form').show();
+                    }
+                    if (delay < 60000){
+                        delay = delay * 2;
+                    }
+                    window.setTimeout(check_status, delay);
+                }
+            });
+        }
+        window.setTimeout(check_status, delay);
+    {% endif %}
+});
+</script>
+{% endblock %}
+
+{% block content %}
+{% set path = request.params.get('path', '') %}
+<div id='snapshot_status'>
+    <img src="{{g.forge_static('images/spinner.gif')}}" class="spinner" style="display:none"/>
+    <h2 class="busy ready">Generating snapshot...</h2>
+    <h2 class="complete">Your download will begin shortly, or use this <a href="{{c.app.repo.tarball_url(revision, path)}}">direct link</a>.</h2>
+    <form action="tarball" method="post" class="None">
+      <p>We're having trouble finding that snapshot. Would you like to resubmit?</p>
+      <input type="hidden" name="path" value="{{path}}" />
+      <input type="submit" value="Resubmit Snapshot Request" />
+      {{lib.csrf_token()}}
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style type="text/css">
+    #snapshot_status {
+      margin: 0 10px;
+    }
+    #snapshot_status h2 {
+        display: none;
+    }
+    #snapshot_status .{{ status }} {
+        display: inline-block;
+    }
+    #snapshot_status form {
+      display: none;
+      margin-left: 20px;
+    }
+    #snapshot_status form p {
+      padding-left: 0;
+    }
+</style>
+{% endblock %}

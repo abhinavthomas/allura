@@ -1,0 +1,95 @@
+/*
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+*/
+
+ul.deck {
+    cursor: move;
+    display: inline-block;
+    font-family: sans-serif;
+    font-size: 13px;
+    border-radius: 4px;
+    -moz-border-radius: 4px;
+    -moz-box-shadow: 0 1px 0 #FFFFFF;
+    -webkit-box-shadow: white 0px 1px 0px;
+    background: -moz-linear-gradient(100% 100% 90deg, #E5E5E5, #FFFFFF 100%) repeat scroll 0 0 #E5E5E5;
+    background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, from(white), to(#E5E5E5));
+    border: 1px solid #AAAAAA;
+    width: 182px;
+    padding: 0;
+}
+
+ul.deck h3 {
+    color: #444;
+    font-family: "TitilliumText22Bold", arial, sans-serif;
+    font-weight: normal;
+    text-transform: uppercase;
+}
+
+ul.deck li:first-child {
+    border-top: medium none !important;
+}
+
+ul.deck li:last-child {
+    border-bottom: medium none !important;
+}
+
+ul.deck li {
+    position: relative;
+    border-top: 1px solid #FFFFFF;
+    border-bottom: 1px solid #AAAAAA;
+    list-style: none outside none;
+}
+
+ul.deck li a {
+    color: #555555;
+    display: block;
+    padding: 5px 10px;
+}
+
+ul.deck li a:hover {
+    background: none repeat scroll 0 0 rgba(229, 229, 229, 0.9);
+}
+
+ul.deck img {
+    margin: 10px auto;
+    display: block;
+}
+
+ul.deck li small {
+    margin: 0;
+    padding: 0 3px;
+    position: absolute;
+    right: 5px;
+    text-align: center;
+    top: 5px;
+    width: 26px;
+}
+
+a:hover {
+    color: #0099CC !important;
+    text-decoration: underline;
+}
+
+ul.deck ul.subroles {
+    padding-bottom: 1em;
+}
+
+ul.deck ul.subroles li {
+    font-size: 85%;
+    border: none;
+}

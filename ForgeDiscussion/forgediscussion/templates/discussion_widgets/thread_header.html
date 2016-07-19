@@ -1,0 +1,40 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% import 'allura:templates/jinja_master/lib.html' as lib with context %}
+
+<div class="grid-5"><label>Forum:</label> <a href="{{value.discussion.url()}}">{{value.discussion.name}}</a></div>
+{% if value.first_post %}
+  <div class="grid-5"><label>Creator:</label> {{lib.user_link(value.first_post.author())}}</div>
+  <div class="grid-4"><label>Created:</label> {{lib.abbr_date(value.first_post.timestamp)}}</div>
+{% endif %}
+<div class="grid-5"><label>Updated:</label> {{lib.abbr_date(value.mod_date)}}</div>
+
+{% if show_moderate and h.has_access(value, 'moderate')() %}
+  <div id="mod_thread_form" style="display: none;">
+    <h2>Moderate Thread</h2>
+    {{widgets.moderate_thread.display(value=value, action=value.url()+'moderate')}}
+    <div style="clear: both;">&nbsp;</div>
+  </div>
+{% endif %}
+
+{% if h.has_access(value, 'post')() %}
+  <div id="tag_thread_holder" style="display:none" class="grid-18">
+    {{widgets.tag_post.display(value=value,submit_text='Save', action=value.url() + 'tag')}}
+  </div>
+{% endif %}

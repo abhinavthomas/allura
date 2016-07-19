@@ -1,0 +1,115 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% extends 'forgeshorturl:templates/master.html' %}
+
+{% set can_update = c.user and h.has_access(c.app, 'update') %}
+{% set can_create = c.user and h.has_access(c.app, 'create') %}
+
+{% block actions %}
+  {% if can_create %}
+  {{ g.icons['add'].render(
+      href='{}admin/{}/add/'.format(c.project.url(), c.app.config.options.mount_point),
+      title="Add Short URL",
+      extra_css="add-short-url") }}
+  {% endif %}
+  {{ g.icons['search'].render(href='search/') }}
+{% endblock %}
+
+{% block content %}
+<table>
+    <thead>
+    <tr>
+        <th>Private</th>
+        <th>Create user</th>
+        <th>Short URL</th>
+        <th>Full URL</th>
+        <th>Description</th>
+        <th>Created</th>
+        <th>Last updated</th>
+        {% if can_update %}<th></th>{% endif %}
+    </tr>
+    </thead>
+    {% for su in short_urls %}
+    <tr>
+        {%if su.private %}
+            <td><small>yes</small></td>
+        {% else %}
+            <td><small>no</small></td>
+        {% endif %}
+
+        <td><small>{{ su.user.username }}</small></td>
+        <td><small><a href="{{ su.short_url() }}">{{ su.short_name }}</a></small></td>
+        <td><small>{{ su.full_url|urlize(20) }}</small></td>
+        <td><small>{{ su.description }}</small></td>
+        <td><small>{{ lib.abbr_date(su.created) }}</small></td>
+        <td><small>{{ lib.abbr_date(su.last_updated) }}</small></td>
+        {% if can_update %}
+        <td>
+          <small>
+            <a class="update-short-url" id="update-url-{{su.short_name}}" href="{{c.project.url()}}admin/{{c.app.config.options.mount_point}}/add/">
+              Update
+            </a>
+            <script>
+              $(function() {
+                var modal = $('#lightbox_short-url-modal');
+                $('#update-url-{{su.short_name}}').click(function() {
+                  startLightbox(modal);
+                  modal.find('#short-url-form-title').show();
+                  modal.find('#short-url-form-action-label').text('Update');
+                  modal.find('input[name="update"]').val('True');
+                  modal.find('input[name="short_url"]').val('{{ su.short_name }}').prop('readonly', true).trigger('keyup');
+                  modal.find('input[name="full_url"]').val('{{ su.full_url }}');
+                  modal.find('textarea[name="description"]').val('{{su.description|replace("\n", "\\n")|replace("\r", "\\r")}}');
+                  if ('{{ su.private }}' == 'True') {
+                    modal.find('input[name="private"]').prop('checked', true);
+                  } else {
+                    modal.find('input[name="private"]').prop('checked', false);
+                  }
+                  return false;
+                });
+              });
+            </script>
+            <br>
+            <a id="remove-url-{{su.short_name}}" href="{{c.project.url()}}admin/{{c.app.config.options.mount_point}}/remove">
+              Remove
+            </a>
+            <script>
+              $(function() {
+                var cval = $.cookie('_session_id');
+                $('#remove-url-{{su.short_name}}').click(function() {
+                    if (confirm('Remove URL {{su.short_name}}?')) {
+                      var row = $(this).parents('tr');
+                      var data = {_session_id: cval, shorturl: '{{ su.short_name }}'};
+                      $.post(this.href, data, function(data, status, xhr) {
+                        if (data.status == 'ok') row.remove();
+                      });
+                    }
+                  return false;
+                });
+              });
+            </script>
+          </small>
+        </td>
+        {% endif %} {# can_update #}
+    </tr>
+    {% endfor %}
+
+</table>
+{{ c.page_list.display(limit=limit, count=count, page=pagenum) }}
+{% endblock %}

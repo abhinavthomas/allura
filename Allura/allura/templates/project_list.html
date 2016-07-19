@@ -1,0 +1,80 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% extends g.theme.master %}
+
+{% block title %}{{title}}{% endblock %}
+
+{% block header %}{{title}}{% endblock %}
+
+{% block extra_css %}
+  <style type="text/css">
+  #section .base .pad{
+    background-color: inherit;
+    border-radius: 0;
+      -moz-border-radius: 0;
+      -webkit-border-radius: 0;
+    box-shadow: rgba(0,0,0, 0) 0 0 0;
+      -moz-box-shadow:  rgba(0,0,0, 0) 0 0 0;
+      -webkit-box-shadow:  rgba(0,0,0, 0) 0 0 0;
+  }
+  </style>
+{% endblock %}
+
+{% macro project(n, subprojects) %}
+            <div style="clear:both;"><a href="{{n.url()}}"><h2>{{n.name}}</h2></a></div>
+            <div class="list" style="clear:both">
+              {% for p in subprojects %}
+                {% do g.set_project(p) %}
+                {% if h.has_access(p, 'read')() %}
+                  {{c.project_summary.display(value=p)}}
+                {% endif %}
+              {% endfor %}
+            </div>
+{% endmacro %}
+
+{% block content %}
+          {% set old_project = c.project %}
+          
+          {% if text %}
+            {{text|safe}}
+          {% endif %}
+          
+          {% if not projects %}
+            <p>No projects found</p>
+          {% else %}
+          <div>
+            {% if projects[0] is sequence %}
+              {% for n, subprojects in projects %}
+                {{project(n, subprojects)}}
+              {% endfor %}
+            {% else %}
+              <div class="list">
+                {% for project in projects %}
+                  {% do g.set_project(project) %}
+                  {% if h.has_access(project, 'read')() %}
+                    {{c.project_summary.display(value=project)}}
+                  {% endif %}
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+          {% endif %}
+          
+          {% do g.set_project(old_project or None) %}
+{% endblock %}

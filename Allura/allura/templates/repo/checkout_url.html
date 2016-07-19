@@ -1,0 +1,48 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+<!DOCTYPE html>
+<form action="{{c.project.url()}}admin/{{app.config.options.mount_point}}/set_checkout_url" method="post">
+    <label class="grid-4">External checkout URL:</label>
+    <div class="grid-9">
+        <input type="text" name="external_checkout_url" id="external_checkout_url" value="{{app.config.options.external_checkout_url or ''}}"/>
+    </div>
+    <div class="grid-13">
+        Override the checkout URL with an external one.  This is useful if this repository is a mirror
+        of another, canonical repository.
+    </div>
+    {% if merge_allowed %}
+        <div class="grid-13">&nbsp;</div>
+        <div class="grid-9">
+            <label>
+            <input type="checkbox" name="merge_disabled" {% if app.config.options.get('merge_disabled') %}checked="checked"{% endif %}/>
+            Disable one-click merge via web.
+            </label>
+        </div>
+        <div class="grid-13">
+            You may want to disable one-click merge, if this repository is a mirror and not the primary repository.
+        </div>
+    {% endif %}
+    <div class="grid-13">&nbsp;</div>
+    <hr>
+    <div class="grid-13">&nbsp;</div>
+    <div class="grid-13">
+        <input type="submit" value="Save"/>
+        <a href="#" class="close">Cancel</a>
+    </div>
+</form>

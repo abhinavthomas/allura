@@ -1,0 +1,36 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+<div class="list card{% if show_proj_icon%} proj_icon{% endif %}"
+	{%- if columns == 2 %} style="width: 330px"{% elif columns == 3 %} style="width: 220px"{% endif %}>
+  {% if accolades %}
+    <div class="box notch sponsor">
+      <div class="feature">
+        <a href="{{accolades[0].award_url}}" title="{{accolades[0].comment}}">{{accolades[0].award.short}}</a>
+      </div>
+      {% if icon_url %}<img src="{{icon_url}}" alt="{{value.name}} Logo"/>{% endif %}
+    </div>
+  {% elif icon_url %}
+    <div class="box">
+      <img src="{{icon_url}}" alt="{{value.name}} Logo"/>
+    </div>
+  {% endif %}
+  <h2><a href="{{value.url()}}">{{value.name}}</a></h2>
+  <p class="desc">{% if value.summary %}{{value.summary}}{% else %}{{h.text.truncate(value.short_description, 50)}}{% endif %}</p>
+  {% if show_download_button %}{{g.markdown_wiki.convert('[[download_button]]')}}{% endif %}
+</div>

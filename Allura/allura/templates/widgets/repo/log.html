@@ -1,0 +1,90 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% from 'allura:templates/jinja_master/lib.html' import email_link, abbr_date with context %}
+{% set app = app or c.app %}
+{% set path = request.params.get('path', '')%}
+<div>
+  {%if is_file%}
+  <div class="grid-19"><input type="button" value="Compare" class="compare_revision"></div>
+  {%endif%}
+  <table style="clear:both">
+    <thead>
+      <tr>
+        <th style="text-align:left">Commit</th>
+        <th style="text-align:left">Date</th>
+        <th>&nbsp;</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for commit in value %}
+        <tr class="rev">
+          <td>
+            <div>
+                {%if is_file %}
+                    <div class="grid-1"><input type="checkbox" class="revision" revision="{{commit.id}}" url_commit="{{app.repo.url_for_commit(commit.id)}}"></div>
+                {% endif %}
+                <a class="rev" href="{{app.repo.url_for_commit(commit.id)}}">{{app.repo.shorthand_for_commit(commit.id)}}</a>
+                {% if commit.refs -%}
+                    (
+                    {%- for ref in commit.refs -%}
+                        <a class="ref" href="{{app.repo.url_for_commit(ref)}}">{{ref}}</a>{% if not loop.last %},&nbsp;{% endif %}
+                    {%- endfor -%}
+                    )
+                {%- endif %}
+                {%if is_file %}
+                    ({{ commit.size|filesizeformat if commit.size else 'None' }})
+                {% endif %}
+                by {{ email_link(commit.authored.email, commit.authored.name) }}
+                {%- if commit.committed.email != commit.authored.email %},
+                pushed by {{ email_link(commit.committed.email, commit.committed.name) }}
+                {% endif %}
+                {{g.markdown_commit.convert(commit.message)}}
+                {% if commit.rename_details %}
+                    <div>
+                      <b>renamed from</b>
+                      <a href={{commit.rename_details['commit_url']}}log/?path={{ commit.rename_details['path'] }}>
+                        {{ commit.rename_details['path'] }}
+                      </a>
+                    </div>
+                {% endif %}
+            </div>
+          </td>
+          <td style="vertical-align: text-top">
+            {% if commit.authored.date %}{{commit.authored.date|datetimeformat}}{% endif %}
+          </td>
+          <td style="text-align: left; vertical-align: text-top">
+              <a class="browse" href="{{app.repo.url_for_commit(commit.id)}}tree{{path}}">
+                  {{ 'View' if is_file else 'Tree' }}
+              </a>
+              {%if is_file%}
+              <br/>
+              <a class="download" href="{{app.repo.url_for_commit(commit.id)}}tree{{path}}?format=raw">Download</a>
+              {%endif%}
+              {% if commit.rename_details %}
+                  {%set path=commit.rename_details['path']%}
+              {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if show_paging and next_commit %}
+      <a class="page_list" href="{{app.repo.url_for_commit(next_commit.id)}}log{{tg.url(params=request.params)}}">Older ></a>
+  {% endif %}
+</div>

@@ -1,0 +1,50 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+<div class="grid-{{ grid if grid else '19' }}">
+  <div style="overflow:auto">
+    <table>
+      <thead>
+        <tr>
+          <th>Time (UTC)</th>
+          <th>User</th>
+          <th>URL</th>
+        </tr>
+        <tr>
+          <th></th><th colspan="2">Change</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in entries %}
+        <tr>
+          <td style="white-space: nowrap">{{ entry.timestamp_str }}</td>
+          <td>{{ entry.user and entry.user.username or 'Unknown' }}</td>
+          <td>{{ entry.url_str }}</td>
+        </tr>
+        <tr>
+          <td></td><td colspan="2">{{ entry.message|nl2br }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<div class="grid-{{ grid if grid else '19' }}" style="clear:both">
+  {{widget.fields.page_list.display(limit=limit, page=page, count=count)}}
+  {{widget.fields.page_size.display(limit=limit, count=count)}}
+</div>

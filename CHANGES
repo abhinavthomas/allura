@@ -1,0 +1,636 @@
+Version 1.4.0  (April 2016)
+
+Upgrade Instructions
+
+ To show a custom logo, update your .ini file with logo.* settings (see development.ini for examples)
+ To show custom header links, set global_nav in the .ini file
+
+New Features
+ * [#7919] [#7920] New admin nav bar
+ * [#5940] Add options for site logo and links in header
+ * [#8023] [#8024] Site notification admin interface
+ * [#6662] [#8051] Add attachments to Export
+ * [#7987] Standardize fenced blocks in markdown
+
+Bug Fixes & Minor Improvements
+
+ Code Repositories:
+ * [#8029] Submitter should be able to reject merge request
+ * [#8042] Better handing of tmp dirs during merge
+ * [#8072] Change "asked you to merge" text
+ * Remove .ts from list of known binary extensions; allow repo settings to override binary blacklist
+ * Encode username for git
+ Wiki:
+ * [#7998] Adding attachment to wiki loses your text changes
+ Tickets:
+ * [#7929] Enable voting on tickets by default
+ * [#8069] Ticket search error: undefined field assigned_to
+ * [#8061] Attachments not visible if ticket status is 'pending'
+ Blog:
+ * [#4153] RSS feed for blog should not show revisions or deleted posts
+ * [#8031] Show blog search box
+ Admin:
+ * [#7145] When deleting a tool, the solr call should be a bg task
+ * [#7682] Add confirmation dialog to award/awardgrant delete
+ * [#8020] Easy way to view all posts from a certain user, and flag as spam
+ * [#8033] create-allura-sitemap.py broken
+ * [#8037] Change "Label" admin option to "Rename"
+ * [#8057] Handle user-projects better in project delete form
+ * When deleting a user project, actually do it - not just disable the user
+ General:
+ * [#4849] Pages are more printer-friendly
+ * [#7978] Activity page fixes
+ * [#8003] Bugs in attachments to comments
+ * [#8005] Subprojects not checked for 'deleted' flag
+ * [#8010] Markdown editor does not load when url hash contains slashes
+ * [#8013] New Users should not be displayed in /u/wiki/home until email is verified
+ * [#8036] Update modal css (simple-flat-dark)
+ * [#8046] Don't duplicate titles on neighborhood pages
+ * [#8066] Don't error out on missing users
+ * Add login redirect to the nav "Log In" link
+ * better tool descriptions
+ For Developers:
+ * [#7907] Use standardized solr installation
+ * [#7921] Remove old tool configuration page
+ * [#8032] Set up primary emails for test users (paster setup-app)
+ * [#8034] Fire event for any menu changes
+ * [#8035] Finalize frontend eslint/jscs setup
+ * [#8038] Support mongo 3.x
+ * [#8039] Change jslint to use an npm tool instead of java
+ * [#8041] Update regexes to match DNS host rules better
+ * [#8044] API for current site notification
+ * [#8047] Akismet filter needs to send original metadata when reporting spam/ham
+ * [#8054] Remove Google Code importers
+ * Add audit log messages to disable_users.py script
+ * Docker fixes
+ * Add clear_user_data and from_username helper methods
+ * Add guardfile for livereload of frontend changes
+ * Delete bootstrap tasks instead of running them; 30-40% speedup in test run time
+ * new admin APIs, new _nav.json param
+ * remove AdminModal widgets, use JS directly
+ * remove sidebar_menu_widgets and admin_menu_widgets, using JS directly instead
+ * upgrade existing react code to 0.14
+ * better calculation of tool/subproject ordinal values when installing
+
+
+Version 1.3.2  (December 2015)
+
+Upgrade Instructions
+
+ To enable faster commit views, by skipping copy detection, update the development.ini file to set
+ scm.commit.git.detect_copies and scm.commit.hg.detect_copies to false.
+
+New Features
+
+ * [#6797] Move API docs from sf.net wiki to RAML.  Browse at https://forge-allura.apache.org/p/allura/rest-api-docs
+ * [#7922] Add "admin" section to the left sidebar of all tools
+ * [#7924] Update icon set to FontAwesome
+ * [#7999] Admin page to really delete projects
+ * [#8004] Cleaner project nav, tool icons removed
+ * [#7955] Add more formatting support to markdown editor
+
+Security
+
+ * [#5694] Set max limit on limit param
+ * [#8011] Served SVG images can execute JS
+
+Bug Fixes & Minor Improvements
+
+ Documentation:
+ * [#7957] Document how to run allura with gunicorn/uwsgi/mod_wsgi
+ * [#7995] Some docker config & doc improvements
+ Tickets:
+ * [#7911] Remove "bin" terminology from saved searches pages
+ Code Repositories:
+ * [#7403] [Allura|Bug] - Typo found in initial Git command description.
+ * [#7538] If diff is empty, it shouldn't show "empty file" [ss7532]
+ * [#7913] Handle parsing of the output from git 2.4.0+
+ * [#7925] Speed up diff processing with binary files
+ * [#7963] Speed up commit view by disabling copy detection with option
+ Blog:
+ * [#7822] Should not show draft blog post changes in activity stream
+ Wiki:
+ * [#7871] Send email notifiction on wiki page delete
+ Admin:
+ * [#7923] Left sidebar should show appropriate links when viewing tool options
+ General:
+ * [#7943] Limit the "_discuss" results from the tickets api.
+ * [#7948] Cursor position often wrong in new markdown editor
+ * [#7950] Markdown editor should have max height
+ * [#7970] Expand urlopen retry conditions
+ * [#7994] Fix comments split across two threads, not all comments showing
+ * [#8016] Dialog 'cancel' link in wrong place
+ Other:
+ * [#7946] Error setting channel in Chat's options
+ * [#7953] API endpoints error when using access_token as URL param
+ * [#7984] Fix layout at bottom of subscriptions page
+ * [#7990] Change link on new_projects admin page
+ * [#7997] image attachments visible on posts (replies) awaiting moderation
+ * [#8007] Broken icon images when running under gunicorn
+ * [#8014] Bug: removed upsert() method needed by TracWikiImporter
+ * [#7959] Need to set focus when phone validation overlay appears
+ * [#7960] clean_phone_number function is too eager to prepend 1-
+ * [#7969] Option to force phone validation language
+ * [#7979] Phone validation interfering with project import
+ * [#7991] Option to limit phone validation usage
+ For Developers:
+ * [#7976] JSX and ES6 support, via Broccoli toolchain
+ * [#8026] Remove jquery.file_chooser.js
+ * [#8027] Fix licensing of several files
+ * [#7964] test_merge_request_detail_view fails (intermittent)
+ * [#7980] Fix pep8 and pyflakes violations
+ * [#8015] Activitystream needs ming config option
+ * [#8028] Use virtualenv inside docker
+
+
+Version 1.3.1  (August 2015)
+
+Upgrade Instructions
+
+ To enable CORS headers for the rest APIs, use the cors.* settings in the development.ini file.
+ If you have your own .ini file, enable git tag & branch caching speedups by setting: repo_refs_cache_threshold = .01
+
+New Features
+
+ * [#5943] Post-setup instructions
+ * [#6373] Document administrative commands
+ * [#7897] Live syntax highlighting for markdown editing
+ * [#7927] Allow CORS access to rest APIs
+ * [#7540] Ticket notifications should include links to attachments
+
+Security
+
+ * [#7947] XSS vulnerability in link rewriting
+ * [#7942] In project admin - user permissions, removing a custom group needs to use POST
+ * [#7685] Subscribe/unsubscribe action should use POST
+
+Bug Fixes & Minor Improvements
+
+ Tickets:
+ * [#4020] Date picker in milestone editor doesn't flip between months
+ Wiki:
+ * [#4802] Wiki edit link is not very discoverable
+ * [#7310] "Maximize" should stick
+ Code repositories:
+ * [#7873] Git branch & tag speedups  -- NEEDS INI
+ * [#7894] Don't update merge request timestamps incorrectly
+ * [#7932] Fix pagination issue in the commit browser
+ * [#7899] Issue with downloading files from repo with spaces in name
+ * [#7906] Fix login check on ApacheAccessHandler.py
+ Forums:
+ * [#7880] Forums mail not getting sent that require moderation
+ * [#7930] Bug: viewing a thread updates project mod_date
+ Project Admin:
+ * [#7884] Move add/edit Features to Metadata section
+ * [#7885] Tooltip for project admin
+ * [#7898] Icon upload/edit is not clear
+ General:
+ * [#7803] Fix taskd_cleanup to search for right process name
+ * [#7889] Improve markdown logic for cached vs threshold limits
+ * [#7890] Neighborhood cache preventing saving admin changes
+ * [#7916] Error when handling user-profile URLs of users with invalid names.
+ * [#7928] Site admin search tables can overflow the page width
+ * [#7903] No mention about small letters in user registration
+ * [#7909] Use dashes when suggesting project shortnames
+ * [#7915] Move Allura installation instructions into the docs
+ For Developers:
+ * [#7809] Update install/docker to ubuntu 14.04
+ * [#7891] Remove zarkov integration code
+
+
+Version 1.3.0  (June 2015)
+
+Upgrade Instructions
+
+ * Run: cd Allura; paster script development.ini allura/scripts/trim_emails.py
+
+New Features
+
+ Webhooks:
+ * [#4542] Implement webhooks
+ * [#7832] APIs to manage webhooks
+ * [#7829] Webhooks documentation
+ Merge requests:
+ * [#7830] One-click merge
+ * [#7865] Config options to disable one-click merge requests
+ * [#7866] Run can_merge in background, and cache results
+ * [#7882] Option to use a tmp dir for git ops on merge request view
+ * [#7872] Show markdown preview/help buttons for merge requests
+ Phone verification:
+ * [#7868] Phone verification system
+ * [#7881] Clean up phone numbers before using them
+ * [#7887] Better messaging for phone validation
+ Other:
+ * [#7806] Create a docker image for Allura
+ * [#7886] Config options to limit ticket & wiki page creation
+ * [#7840] Support Authorization header for OAuth
+ * [#7633] API for has_access
+ * [#6057] Adding an external link should be one step, not two
+ * [#7850] Ability to close discussion on a ticket
+ * [#6107] Disable email posting for the forum? [ss3579]
+
+Security
+
+ * [#7786] Invalidate pwd reset tokens after email change
+ * [#7893] CSRF checks don't work on login
+
+Bug Fixes & Minor Improvements
+
+ Tickets:
+ * [#6017] Should show attachment changelog when ticket gains an attachment
+ * [#5467] Create Issue Button Should Always Appear (Only possibly refer to an explanation for why it was disabled).
+ * [#7834] Bug: viewing a ticket updates its 'updated' date
+ * [#7874] UnicodeEncodeError on ticket attachment diff
+ Code Repositories:
+ * [#7837] Use repo directly instead of DiffInfoDoc
+ * [#7843] Handle quotes in filenames on commit view
+ * [#7857] Retry svnsync repo clone failures
+ * [#7825] Update "new commits" email template
+ * [#7836] Merge request shows 0 commits, if upstream has new commits
+ Wiki:
+ * [#7841] wiki code to not show delete authors.
+ User Profile:
+ * [#7072] User can't access personal subscriptions page [ss6565]
+ * [#7833] Trim emails before saving them to mongo NEEDS SCRIPT
+ Tools Configuration:
+ * [#7817] Replace "mount point" field with URL field, on tool creation forms
+ * [#7820] Validate URLs when configuring external link tool
+ Importers:
+ * [#7864] Error on google code import with paginated comments
+ * [#7854] Decode html entities in importers; and make taskd easier to debug
+ Activity Stream:
+ * [#7823] Commit activity is assigned to wrong person
+ * [#7082] Filter deleted, unmoderated, or spam artifacts from Activity Stream
+ * [#7888] has_activity_access/deleted error
+ Administration:
+ * [#7892] script/task to disable list users
+ For Developers:
+ * [#7827] Upgrade jQuery to latest version
+ * [#7835] Update theme for the documentation.
+ * [#7855] Upgrade docutils, Pygments and Babel, so docs can be built easily
+ * [#7869] During tests, apply patches only once
+ * [#7870] Clean up .ini files
+ Other:
+ * [#1731] Cannot delete a post, after deleting its parent
+ * [#7852] Don't update mod time when viewing artifact creates a cache
+ * [#7856] Error looking up user by email address when email is invalid
+ * [#7876] projects macro display_mode=list is missing CSS
+
+
+Version 1.2.1  (February 2015)
+
+Bug Fixes & Minor Improvements
+
+ * [#5726] RSS feed for discussion stopped 12/13/2012? [ss2637]
+ * [#6248] long lines in markdown lists get truncated on the right [ss4073]
+ * [#7772] Type text is splitted in more lines if separated by spaces in bulk edit
+ * [#7813] Handle uppercase in email address all the time
+ * [#7815] KeyError: 'name'
+ * [#7808] Check for wiki presence before importing it
+ * [#7831] Logout issue
+ Administration:
+ * [#7816] Show/manage user's pending status
+ * [#7821] More accurate audit logs when changing user's status
+ Performance:
+ * [#7824] Cache neighborhood record
+ For developers:
+ * [#7516] Timing may case test_set_password_sets_last_updated to fail
+ * [#7795] test_version_race fails occassionally
+ * [#7819] New email address lookup helpers fail on None
+
+
+Version 1.2.0  (December 2014)
+
+Upgrade Instructions
+
+ * Edit Allura/development.ini and set: activitystream.enabled = true
+ * Run: mongo allura scripts/migrations/030-email-address-_id-to-email--before-upgrade.js
+ * Run: mongo allura scripts/migrations/030-email-address-_id-to-email--after-upgrade.js
+ * Run (optional): mongo allura scripts/migrations/030-email-address-_id-to-email--cleanup.js
+ * Run: cd Allura; paster ensure_index development.ini
+ * Run: cd Allura; paster script development.ini ../scripts/migrations/031-set-user-pending-to-false.py
+ * Run: cd Allura; paster script development.ini allura/scripts/remove_duplicate_troves.py
+
+New Features
+
+ * [#7097] New profile page design
+ * [#7156] Turn on activitystreams by default
+ * Admin page to search for projects
+ * Admin pages to search, view, and edit user details
+ * [#7524] User audit trail, for site admins
+ * [#7593] Allow site admins to add user audit entries
+ * LDAP improvements
+ * [#7409] Configurable max & min password lengths
+ * [#7432] Password expiration
+ * [#7451] Remember me option on login
+ * [#7372] Allow users to disable their own accounts
+ * [#2286] Ability to restrict tools per neighborhood
+ * [#4019] Add an easy way to filter ticket queries by open/closed without knowing Solr syntax
+ * [#4905] button to subscribe to a wiki
+ * [#7134] Added option to allow overriding repo clone URL
+ * [#7381] Google code importer should handle Apache-Extras/EclipseLabs projects
+
+Removed functionality:
+
+ * [#1687] Remove pre-oauth API keys (use OAuth now)
+ * [#7013] Remove broken openid support
+
+Bug Fixes & Minor Improvements:
+
+ * [#4602] Artifact links to closed tickets should have strikethrough
+ * [#4987] Artifact links within a tool should match within tool first
+ * [#4703] "Related" artifacts should indicate project/tool if referencing other project
+ * [#6305] Merge email notifications when possible
+ * [#7213] Discussion edit/reply non-functional in IE11 (at least)
+ * [#7378] RSS feeds shouldn't include comments held for moderation
+ * [#7679] project admin listings should not include disabled users
+ Users & Authentication:
+ * [#6677] User profile's list of projects is slow to build
+ * [#5414] Typo on user prefs page
+ * [#3815] return_to field not created in LoginForm
+ * [#7085] error on activity rss feed for users
+ * [#7164] Make activity widgets show 5 items if possible
+ * [#7410] Show more info in password recovery flow
+ * [#7436] /auth/preferences cleanup
+ * [#7452] Require an email address be verified before it is set as primary
+ * [#7480] Track last session info
+ * [#7484] OAuth app names don't need to be globally unique NEEDS ENSURE_INDEX
+ * [#7492] Clean up incomplete sentence in activity feed
+ * [#7523] Better to go to /auth/preferences after email addr verification
+ * [#7526] Fix mail headers in email verification email
+ * [#7527] Email address associations need better user associations NEEDS MONGO MIGRATION
+ * [#7543] Password recovery should not confirm email addr existance
+ * [#7545] return_to param should be validated for relative URLs
+ * [#7585] Require password entry for changes to email settings
+ * [#7635] Add autofocus to login form
+ * [#7636] Fix forgotten pwd link on login overlay
+ * [#7688] Redirect to password expiration page after login
+ * [#7704] Option to require email for user registration NEEDS MIGRATION
+ * [#7715] Handle + in email address url params
+ * [#7717] Better existing email addr handling
+ * [#7732] Be able to use secure cookies and SSLMiddleware
+ * [#7756] Ensure user always go to pwd expired form, when expired
+ * [#7759] After resetting pwd and logging in, don't redir back to pwd reset form
+ * [#7761] Disabling a user does not remove/disable his primary email
+ * [#7787] Ldap error when logging in with unicode in username or password
+ * [#7794] "Page Size" preference must actually affect pagination
+ * [#7799] Changing password should invalidate other sessions
+ Admin:
+ * [#5939] Missing icons on permission edit page
+ * [#6495] Screenshot admin UI improvements
+ * [#6834] Inconsistent display of new user in Permissions
+ * [#6949] Error on export: artifact ref and cleanup
+ * [#7014] Trove category editing improvements
+ * [#7075] Screenshot macro incorrectly includes text about sorting
+ * [#7275] Add users broken in IE11
+ * [#7293] Create Trove Category browse page
+ * [#7347] Add URL and comment fields to AwardGrant
+ * [#7351] When export control is True, it always records a change in the audit log
+ * [#7613] Integrate sortable.js to the new_projects page
+ * [#7675] Fix error when deleted permission group is still referenced
+ Code Repositories:
+ * [#5175] Merge requests should have a good <title>
+ * [#5176] Merge requests should show the date
+ * [#6164] Ability to edit merge requests
+ * [#6301] Track changes to merge requests
+ * [#6902] Merge request to branch list commits against master
+ * [#7295] Bigger text inputs for merge requests
+ * [#5472] JS spinner uses a lot of CPU
+ * [#5700] Replace "git branch --set-upstream" with "git branch --set-upstream-to"
+ * [#5769] Can't select code via double- or triple-click
+ * [#6764] Git test failures on 1.8.3
+ * [#7021] Handle pgp-signed git commits
+ * [#7051] 500 error with large number of repos
+ * [#7069] unable to view/process merge requests when fork is deleted
+ * [#7127] "Download snapshot" background too tall
+ * [#7207] git repos without master branch behave poorly
+ * [#7325] Uninitialized git repo allows forking.
+ * [#7333] svn web import tool breaks repos
+Tickets:
+ * [#5948] Status on individual Milestone view always shows Open
+ * [#6019] List current user first in user-drop-downs
+ * [#4701] Add current ticket's milestone to email notification
+ * [#4981] Ticket voting buttons should only display if you have permission to vote
+ * [#7399] JS errors on ticket bulk edit prevent submission
+ * [#7495] 'url' missing on MovedTicket models
+ * [#7560] Avoid weird permissions when anonymous creates a private ticket
+ * [#7566] Milestone admin page can be very slow
+ Wiki:
+ * [#7528] XSS on wiki page and preview
+ * [#7107] Add confirmation to "Revert to Version" button
+ * [#7168] Markdown macro to load content from repository
+ * [#7202] Use https for youtube embed
+ * [#7353] Cannot delete wiki entries
+ * [#7294] "related" section header not aligned properly
+ * [#7647] Script to clean up, or code to handle, Dupe Key errors on wiki page_history
+ Blog:
+ * [#6930] Email notification for a blog post rename stating the opposite
+ * [#7218] Feedburner doesn't like Blog RSS feed
+ URL Shortener:
+ * [#7324] Fix incorrect div width on URL shortening tool
+ API:
+ * [#7208] DOAP API for projects
+ * [#7292] User profile API
+ * [#7267] Change TroveCategory event API
+ * [#7507] Project API errors on unicode screenshot name
+ * [#7508] Add project creation date to API
+ * [#7659] Allow tools to add fields to project json API
+ * [#7722] API for disabled users should 404
+ * [#7789] Return more fields in ticket API search results
+ Importers:
+ * [#7114] Make imports work on user projects
+ * [#7124] Validate Trac URLs before importing
+ * [#7111] Refactor tool importers to use target_app for g.entry_points
+ * [#7160] Trac-Tickets Importer Rejects URL Containing IP Address
+ * [#7177] Trac ticket error: astimezone() cannot be applied to a naive datetime
+ * [#7580] Ticket attachments aren't imported in Allura importer
+ * [#7801] Issues import from GitHub is broken
+ Administration:
+ * [#6561] Clean up setup-app output
+ * [#6701] Integrate allura authorization with Git/SVN (over HTTP)
+ * [#7128] Change SVN's browse commits graph to direct SCM access
+ * [#7163] Create read perms on ForgeActivity app - NEEDS MONGO CMD
+ * [#7214] Fix pytidylib install; admin page when tools not installed
+ * [#7224] Timermiddleware should measure mongo write ops too
+ * [#7277] Incubator graduation items
+ * [#7287] Update docs/scm_host.rst with info about ApacheAuthHandler.py
+ * [#7316] Review & update scm_host docs
+ * [#7309] add_project form lists all tools, including several that won't work
+ * [#7307] Broken handling of InvalidDocument: BSON document too large
+ * [#7513] Fixing imported wiki pages with slashes in titles
+ * [#7510] Test extracting Allura tickets for Apache move
+ * [#7582] Script to set up MovedTicket records for tickets we're moving to Apache
+ * [#7628] Clean up dupe trove categories / test_filtering fails occasionally NEEDS CMD
+ * [#7683] Make collection of birthdate configurable
+ * [#7800] Standardize IP addr lookup
+ Performance:
+ * [#7027] Cache /nf/tool_icon_css better
+ * [#7181] users_with_named_role should query for the name role only
+ * [#7185] project list macro makes unnecessary queries
+ * [#7186] Need index on artifact_feed (project_id, pubdate) NEEDS ENSURE_INDEX
+ * [#7199] filter projects in create-allura-sitemap.py
+ * [#7472] Thread view counts shouldn't trigger add_artifact tasks
+ * [#7562] Remove unnecessary monq_task 'args' index NEEDS ENSURE_INDEX
+ * [#7644] Make /nf/admin/new_projects faster
+ For developers:
+ * [#7802] Easier to make a custom theme based on main theme
+ * [#7401] Allow custom middleware
+ * [#7029] AuthProvider should be able to add routes to /auth/
+ * [#7154] Expand AdminExtension to support site-admin pages
+ * [#7130] Blob.next_commit and prev_commit should be removed
+ * [#7142] Better conditional around sending zarkov events
+ * [#7173] Improve auth docstrings
+ * [#7178] error with parallel tests: 'solr' is None
+ * [#7215] Test suite timing out
+ * [#7239] Update feedparser
+ * [#7260] Tests create trove categories unnecessarily
+ * [#7305] Document SCM code and merge repo.py into repository.py
+ * [#7329] Update ForeignIdProperty('User') for latest ming
+ * [#7579] Use sendsimplemail instead of sendmail in some cases
+ * [#7581] TestSVNRepo.test_log fails with svn 1.8
+ * [#7804] Use OAuth token for github project validation
+ * [#7805] Improve GitHubOAuthMixin
+
+
+Version 1.1.0  (February 2014)
+
+Upgrade Instructions
+
+ * Run ensure_index command
+ * 3rd party tools that do not use EasyWidgets will need {{lib.csrf_token()}} added to each <form>
+
+New Features
+
+ * [#6777] Create a site-wide notification mechanism
+ * Improved activity stream display and events
+ * [#6694] Form to send message to a user
+ * [#6783] Create a process to reset forgotten passwords
+ * [#6804] API to install a tool
+ * [#6692] API for exports
+ * [#6692] Simpler oauth API via bearer tokens
+ * [#5475] Javascript not required for most forms any more
+ * [#5424] Provide instructions for running git/hg/svn services
+ * [#6896] Developer architecture docs
+ * [#4808] Factor out SourceForge-specific bits of Allura
+
+Bug Fixes & Minor Improvements:
+
+ * Many fixes and improvements for GitHub, Google Code, Trac and Allura importers
+ Code Tools:
+ * [#7006] hide misleading message on Browse Commits page
+ * [#6796] Render all (not just readme) markdown files in repos
+ * [#6801] Options to parallelize last_commit_ids
+ * [#6826] Mass edit emails have invalid To: address
+ * [#6821] Change hg browser to get "last commit" info from hg instead of mongo (if ForgeHg installed)
+ * [#6894] SVN/Git refresh hooks fail for redirects
+ * [#6905] better code snapshot status UX
+ * [#6938] AttributeError on fork listing page
+ * [#6982] SCM views should parse user/email pairs better
+ * [#7022] UnicodeDecodeError on side-by-side diff text
+ * [#6111] remove markdown rendering of commit messages, keep artifact linking
+ * [#4671] Delete old-style LastCommitDoc code
+ * [#6603] Certain code snapshots take forever even to queue up
+ * [#6686] Change git browser to get "last commit" info from git instead of mongo
+ * [#6743] unicode paths in code browser 500 error
+ Tickets:
+ * [#6852] Maximize view for ticket lists
+ * [#6803] Labels should be set without hitting enter
+ * [#6893] Former team member unassigned from ticket on metadata update
+ * [#2778] Tickets: milestone names are bound once they are equal
+ * [#4812] Title field for new tickets mistaken as search bar
+ * [#5749] setting to specify a default milestone
+ * [#6088] Ticket search help open in new window
+ * [#6328] Use In-Reply-To: and References: headers for outgoing ticket emails
+ * [#6381] Allura tickets system intermittently discards replies to comments
+ * [#7047] ticket bulk_edit task sometimes doesn't call add_artifacts
+ * [#4429] ticket bulk-edit forcibly always sets all custom boolean fields to True
+ * [#6646] bulk edit to add labels
+ * [#6752] bulk edit to change "private" field
+ * [#6979] Bulk edit on some milestones with ":" gives empty set
+ * [#6906] Fatal error when replying to tracker item
+ User profile:
+ * [#6833] Choice of social networks should be configurable
+ * [#7062] Set first email address as 'primary' automatically
+ * [#6676] User profile page should show date joined
+ Discussion:
+ * [#7063] Add last_edited field to discussion REST API
+ * [#7065] Slow post queries happening on invalid URLs
+ * [#6864] Add spam button for comments
+ * [#6910] Emails with empty or missing From: should be treated as anonymous
+ * [#6917] User block list not stopping posts-via-email
+ * [#5182] prevent out-of-office replies to allura notifications
+ * [#6249] Use a stable Sender: header in email notifications
+ Wiki:
+ * [#4373] wiki diff incorrectly shows a lot of changes
+ Project admin:
+ * [#6848] Coalesce scripts/migrations/*trove*.py into command/create_trove_categories.py
+ * [#6865] Project admin for categories should be sorted
+ * [#6866] Audit trail adds fb & twitter values even if they don't change
+ * [#6795] TroveCategory.children is slow
+ * [#6889] possible XSS on /p/add_project/
+ * [#5502] Prevent adding certain tools multiple times
+ System/Misc:
+ * Cache markdown rendering results
+ * [#6971] Task manager can't set c.project for user-projects
+ * [#7009] /nf/tool_icon_css doesn't preserve https for URLs
+ * improved smtp_server error handling
+ * [#4091] ensure_index takes for ever looping over every single project
+ * [#4723] Don't link to user-project when Anonymous
+ * [#5330] taskd leaves defunct git processes around
+ * [#6713] Slow /auth/bare_openid?url=/user/registration
+ * [#6484] Move ForgeWiki mediawiki importer (GPL dep) into standalone importer - NEEDS CONFIGTREE
+ * [#7005] allura.tasks.repo_tasks.clone clobbers Project record
+ For developers:
+ * [#7028] severely stunted landing page html after vagrant install
+ * [#6393] Allow plugins to register new markdown macros
+ * [#6994] Test improvements/speedups
+ * [#6942] Make custom tool icons work properly
+ * [#7119] Add config switch to disable template overriding
+ * [#6714] Rename & move User.project_role()
+ * [#6716] __json__ should return plain dicts
+ * [#6388] Tool to inspect performance, particularly between commits
+
+
+Version 1.0.1  (October 2013)
+
+Upgrade Instructions
+
+ * Run ensure_index command
+ * Add bulk export and importer_upload_path INI settings (see development.ini)
+
+New Features
+
+ * [#6422] Added release script and DISCLAIMER, cleaned up NOTICE, LICENSE, and README files
+ * Added GitHub importers for Project, Code, Wiki, and Tickets
+ * Added Tickets importer for Google Code
+ * Added Allura exported Tickets importer
+ * [#3154] Allura data export
+
+Bug Fixes & Minor Improvements:
+
+ * Improvements to importer infrastructure
+ * Additions to Tracker API
+ * Fixes for Trac importer
+ * Performance improvements for code snapshots
+ * [#5561] Maximize view for wide code files
+ * [#5775] Allura Code Viewer: provide "copied from" link in history view
+ * [#6284] Allura Code Viewer: show SVN revision in commit browser
+ * [#6626] Regression: SVN urls don't default to HEAD revision
+ * [#6629] "list index out of range" error on git _iter_commits_with_refs
+ * [#6695] timeout & loop detection in LCD logic
+ * [#6529] Login overlay
+ * [#4595] Revisions to /nf/admin/new_projects
+ * [#5966] Script to move wiki
+ * [#6100] URL-Redirection for moved tickets
+ * [#6392] Per tool user bans
+ * [#6431] Upgrade to ming 0.4.x to avoid extraneous count() queries
+ * [#6539] Timeouts on approving moderated comments [ss4838]
+ * [#6545] Show forum stats graph
+ * [#6604] IE9 json parsing vulnerability
+ * [#6654] Tracker stats template error
+ * [#6685] add faulthandler to smtp_server
+ * [#6699] Provide a way to add additional Timers to AlluraTimerMiddleware
+
+Version 1.0.0  (August 2013) (unreleased)
+
+ * Initial ASF Incubation release

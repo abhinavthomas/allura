@@ -1,0 +1,76 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% extends 'forgewiki:templates/wiki/master.html' %}
+{% from 'allura:templates/jinja_master/lib.html' import abbr_date with context %}
+
+{% block title %}{{c.project.name}} / {{c.app.config.options.mount_label}} / Browse Pages{% endblock %}
+
+{% block header %}Browse Pages{% endblock %}
+
+{% block wiki_content %}
+<div class="nested-grid-container">
+  <div class="grid-10">{{c.page_size.display(limit=limit,count=count,page=page)}}</div>
+  <div class="grid-10 tright">View: <a id="sort_recent" href="?sort=recent">Recently Updated</a> | <a id="sort_alpha" href="?sort=alpha">Alphabetical</a>&nbsp;</div>
+</div>
+<div style="clear:both"></div>
+<table id="forge_wiki_browse">
+  <thead>
+    <tr>
+      <th>Title</th>
+      <th>Last Update By</th>
+      <th>Last Updated</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for page in pages %}
+      <tr class="{{'deleted ' if page.deleted else ''}}{{loop.cycle('', 'even')}}">
+        <td><a href="{{page.url|safe}}">{{page['title']}}</a></td>
+      
+        {% if 'user_label' in page %}
+          <td>{{page['user_label']}} ({{page['user_name']}})</td>
+        {% else %}
+          <td></td>
+        {% endif %}
+        {% if 'updated' in page %}
+          <td>{{abbr_date(page['updated'])}}</td>
+        {% else %}
+          <td></td>
+        {% endif %}
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>  
+{% if can_delete %}
+  <p><a id="toggle_deleted" href="#" style="display:none"><span></span> deleted pages</a></p>
+{% endif %}
+{{c.page_list.display(limit=limit, page=page, count=count)}}
+{% endblock %}
+
+{% block wiki_extra_css %}
+<style type="text/css">
+    tr.deleted a { color:red; }
+</style>
+{% endblock %}
+{% block wiki_extra_js %}
+<script type="text/javascript">
+  var show_deleted = {{'true' if show_deleted else 'false'}},
+      can_delete = {{'true' if can_delete else 'false'}};
+</script>
+<script type="text/javascript" src="{{g.app_static('js/browse.js')}}"></script>
+{% endblock %}

@@ -1,0 +1,269 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% extends 'allura:templates/repo/repo_master.html' %}
+
+{% block title %}
+  {{c.project.name}} / {{c.app.config.options.mount_label}} / Merge Request #{{req.request_number}}: {{req.summary}} ({{req.status}})
+{% endblock %}
+
+{% block header %}{{c.app.config.options.mount_label}}
+Merge Request #{{req.request_number}}: {{req.summary}} ({{req.status}})
+{% endblock %}
+
+{% block actions %}
+  {% if h.has_access(req, 'write')() %}
+    {{ g.icons['edit'].render(href='edit', show_title=True) }}
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+  <div class="grid-19">
+    <div id="merge_task_status" class="task_status">
+      {% if merge_status == 'complete' %}
+        <h2 class="complete">Merged</h2>
+      {% else %}
+        <img src="{{g.forge_static('images/spinner.gif')}}" class="spinner" style="display:none"/>
+        <h2 class="busy ready">Merging...</h2>
+        <h2 class="complete">Merged</h2>
+        <h2 class="fail">Something went wrong. Please, merge manually</h2>
+      {% endif %}
+  </div>
+    <div id="can_merge_task_status" class="task_status">
+      {% if can_merge_status != 'complete' %}
+        <img src="{{g.forge_static('images/spinner.gif')}}" class="spinner" style="display:none"/>
+        <h2 class="busy ready">Checking if merge is possible...</h2>
+        <h2 class="fail">Something went wrong. Please, merge manually</h2>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if req.downstream_repo %}
+    <p>
+      <a href="{{req.creator_url}}">{{req.creator_name}}</a>
+      wants to merge {{h.text.plural(commits|count, 'commit', 'commits')}}
+      from <a href="{{req.downstream_url}}">{{req.downstream_url}}</a>
+      to {{ req.target_branch }},
+      {{lib.abbr_date(req.mod_date)}}
+    </p>
+
+    <div>{{g.markdown.convert(req.description)}}</div>
+
+    {% if error %}
+      <div class='grid-19 error'>
+        Can't find commits to merge. Please checkout
+        <a href="{{req.downstream_url}}">{{req.downstream_url}}</a>
+        and follow the instructions to merge manually.
+      </div>
+    {% endif %}
+
+    {% if req.merge_allowed(c.user) %}
+    <div class='grid-19 merge-help'>
+        <div class="merge-help-text can-merge-in-progress" {% if can_merge == None %}style="display: block;"{% endif %}>
+            Checking if merge is possible...
+        </div>
+        <div class="merge-help-text merge-ok" {% if can_merge == True %}style="display: block;"{% endif %}>
+            Merge request has no conflicts. You can merge automatically.
+        </div>
+        <div class="merge-help-text merge-conflicts" {% if can_merge == False %}style="display: block;"{% endif %}>
+            Merge request has conflicts. Follow manual instructions below to merge.
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="grid-19 merge-toolbar">
+    {% if req.merge_allowed(c.user) %}
+        <form action="merge" method="POST">
+          {{ lib.csrf_token() }}
+          <button type="submit" id="merge-btn">
+            <i class="fa fa-code-fork fa-flip-vertical" aria-hidden="true" {% if not can_merge or merge_status in ('ready', 'busy') %}disabled="disabled"{% endif %}></i> Merge
+          </button>
+        </form>
+    {% endif %}
+
+    {% if req.creator == c.user and req.status == "open" %}
+        <form action="save" method="POST">
+            {{ lib.csrf_token() }}
+            <input type="hidden" value="rejected" name="status">
+            <button type="submit" id="reject-btn" type="submit" >
+                <i class="fa fa-ban" aria-hidden="true"></i> Reject
+            </button>
+        </form>
+
+        <form action="refresh" method="POST">
+            {{ lib.csrf_token() }}
+            <button type="submit" id="refresh-btn" type="submit" >
+                <i class="fa fa-refresh" aria-hidden="true"></i> Refresh Commits
+            </button>
+            <input type="hidden" value="{{req.source_branch}}" name="source_branch">
+        </form>
+    {% endif %}
+
+    </div>
+
+    {{ c.log_widget.display(value=commits, app=downstream_app) }}
+
+    <div class="grid-19"><a href="#discussion_holder">Discuss</a></div>
+
+    {% if h.has_access(c.app, 'write')() %}
+      <div class="grid-19">
+        To merge the commits, please execute the following commands in your working copy:
+      </div>
+      <div class="grid-19">
+        <textarea style="width:80%; height:60px;" readonly>{{ c.app.repo.merge_command(req) | safe }}</textarea>
+      </div>
+      {% if merge_status not in ('ready', 'busy') %}
+        {{ c.mr_dispose_form.display(action="save", value=dict(status=req.status)) }}
+        <br style="clear:both">
+      {% endif %}
+    {% endif %}
+  {% else %}
+    <p>
+      Original repository by
+      <a href="{{req.creator_url}}">{{req.creator_name}}</a>
+      is deleted
+    </p>
+    <div>{{g.markdown.convert(req.description)}}</div>
+    {% if h.has_access(c.app, 'write')() %}
+      {{ c.mr_dispose_form.display(action="save", value=dict(status=req.status)) }}
+      <br style="clear:both">
+    {% endif %}
+  {% endif %}
+
+{% endblock %}
+
+{% block after_content %}
+  <div id="discussion_holder">
+    <h2>Discussion</h2>
+    {% set thread=req.discussion_thread %}
+    {{c.thread.display(
+        value=thread,
+        new_post_text="New Comment",
+        page=page,
+        limit=limit,
+        count=count)}}
+  </div>
+{% endblock %}
+
+{% block extra_css %}
+<style type="text/css">
+  .merge-help-text { display: none; }
+  .merge-ok { color: green; }
+  .merge-conflicts { color: red; }
+  .can-merge-in-progress { color: grey; }
+
+  #merge_task_status .{{ merge_status }} { display: inline-block; }
+  #can_merge_task_status .{{ can_merge_status }} { display: inline-block; }
+  .task_status { margin: 0 10px; }
+  .task_status h2 { display: none; }
+  .task_status h2.complete { color: #C6D880; }
+  .task_status h2.busy { color: #003565; }
+  .task_status h2.fail { color: #f33; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script type="text/javascript">
+$(function() {
+    function make_status_watcher(spinner_selector, status_url, on_complete, on_progress, on_error) {
+      var delay = 500;
+      var delay_threshold = 60000;
+
+      var check_status = function() {
+        $.get(status_url, function(data) {
+          if (data.status === 'complete') {
+            $(spinner).hide();
+            on_complete();
+          } else {
+            if (data.status === 'ready' || data.status === 'busy') {
+              on_progress();
+            } else {
+              $(spinner).hide();
+              on_error();
+            }
+            if (delay < delay_threshold) {
+              delay = delay * 2;
+            }
+            window.setTimeout(check_status, delay);
+          }
+        });
+      }
+
+      var start = function() {
+        $(spinner_selector).show();
+        window.setTimeout(check_status, delay);
+      }
+
+      return start;
+    }
+
+    {% if merge_status in ('ready', 'busy') %}
+      var spinner = '#merge_task_status > .spinner';
+      var url = "{{request.path.rstrip('/') + '/merge_task_status'}}";
+      function on_complete() {
+        $('#merge_task_status h2').hide();
+        $('#merge_task_status h2.complete').show();
+        location.reload();
+      }
+      function on_progress() {
+        $('#merge_task_status h2').hide();
+        $('#merge_task_status h2.busy').show();
+      }
+      function on_error() {
+        $('#merge_task_status h2').hide();
+        $('#merge_task_status h2.fail').show();
+      }
+      var start_watcher = make_status_watcher(spinner, url, on_complete, on_progress, on_error);
+      start_watcher();
+
+    {% elif can_merge_status in ('ready', 'busy') %}
+      var spinner = '#can_merge_task_status > .spinner';
+      var url = "{{request.path.rstrip('/') + '/can_merge_task_status'}}";
+      var can_merge_result_url = "{{request.path.rstrip('/') + '/can_merge_result'}}";
+      function on_complete() {
+        $('#can_merge_task_status h2').hide();
+        $.get(can_merge_result_url, function(data) {
+          $('.merge-help-text').hide();
+          if (data.can_merge) {
+            $('.merge-ok').show();
+            $('#merge-btn').prop('disabled', false);
+          } else {
+            $('.merge-conflicts').show();
+            $('#merge-btn').prop('disabled', true);
+          }
+        });
+      }
+      function on_progress() {
+        $('#can_merge_task_status h2').hide();
+        $('#can_merge_task_status h2.busy').show();
+        $('.merge-help-text').hide();
+        $('.can-merge-in-progress').show();
+      }
+      function on_error() {
+        $('#can_merge_task_status h2').hide();
+        $('#can_merge_task_status h2.fail').show();
+        $('.merge-help-text').hide();
+        $('.merge-conflicts').show();
+      }
+      var start_watcher = make_status_watcher(spinner, url, on_complete, on_progress, on_error);
+      start_watcher();
+    {% endif %}
+});
+</script>
+{% endblock %}

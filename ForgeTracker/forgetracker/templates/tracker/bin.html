@@ -1,0 +1,146 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% extends g.theme.master %}
+{% do g.register_forge_css('css/hilite.css') %}
+{% do g.register_app_css('css/tracker.css') %}
+
+{% block title %}{{c.project.name}} / {{app.config.options.mount_label}} / Saved Searches{% endblock %}
+
+{% block head %}
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="feed.rss"/>
+  <link rel="alternate" type="application/atom+xml" title="Atom" href="feed.atom"/>
+{% endblock %}
+
+{% block header %}Saved Searches{% endblock %}
+
+{% block content %}
+  <form action="{{c.project.url()}}admin/{{app.config.options.mount_point}}/bins/update_bins" method="post"
+        class="update_bins" id="saved-search-form">
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Terms</th>
+          <th>&nbsp;</th>
+        </tr>
+      </thead>
+      <tbody class="bin-list">
+        {% if not bins %}
+          <tr><td colspan="3">No saved searches have been created yet.</td></tr>
+        {% endif %}
+        {% for bin in bins %}
+          <tr{% if loop.index0 % 2 == 0 %} class="even"{% endif %}>
+            <td class="view" {% if bin.error %}style="display:none"{% endif %}><a href="{{bin.url()}}">{{bin.summary}}</a></td>
+            <td class="view" {% if bin.error %}style="display:none"{% endif %}>{{bin.terms}}</td>
+            <td class="edit" style="{% if not bin.error %}display:none{% else %}vertical-align:top{% endif %}"><input type="text" name="bins-{{loop.index0}}.summary" value="{{bin.summary}}"></td>
+            <td class="edit" {% if not bin.error %}style="display:none"{% endif %}>
+                <input class="grid-8" type="text" name="bins-{{loop.index0}}.terms" value="{{bin.terms}}">
+                <span class="grid-3">
+                  {{ g.icons['help'].render(
+                      show_title=True,
+                      target='_blank',
+                      href=tg.url(app.url + 'search_help/'),
+                      extra_css='btn search_help_modal') }}
+                {% if bin.error %}<br/><span style="color:red">{{bin.error}}</span>{% endif %}
+            </td>
+            <td style="width:40px;">
+              {{ g.icons['delete'].render(extra_css='del_bin') }}
+              {{ g.icons['edit'].render(extra_css='edit_bin') }}
+              <input type="hidden" name="bins-{{loop.index0}}.id" value="{{bin._id | string}}">
+              <input type="hidden" name="bins-{{loop.index0}}.delete" value="False" class="delete_flag">
+            </td>
+          </tr>
+        {% endfor %}
+        {% set num_bins = bins.__len__() %}
+        <tr class="new_bin" {% if not (new_bin and new_bin.error) %}style="display:none"{% endif %}>
+            <td {% if new_bin and new_bin.error %}style="vertical-align:top"{% endif %}>
+            <input type="hidden" name="bins-{{num_bins}}.id">
+            <input type="hidden" name="bins-{{num_bins}}.delete" value="False" class="delete_flag">
+            <input type="text" name="bins-{{num_bins}}.summary" placeholder="Summary" {% if new_bin %}value="{{new_bin.summary}}"{% endif %}>
+          </td>
+          <td>
+            <input class="grid-8" type="text" name="bins-{{num_bins}}.terms" placeholder="Terms" {% if new_bin %}value="{{new_bin.terms}}"{% endif %}>
+            <span class="grid-3">
+              {{ g.icons['help'].render(
+                  show_title=True,
+                  target='_blank',
+                  href=tg.url(app.url + 'search_help/'),
+                  extra_css='btn search_help_modal') }}
+            {% if new_bin and new_bin.error %}<br/><span class="err" style="color:red">{{new_bin.error}}</span>{% endif %}
+          </td>
+          <td>&nbsp;</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="grid-16"><a href="#" class="btn add_bin grid-3" {% if errors %}style="display:none"{% endif %}>Add Search</a></div>
+    <div class="grid-16 save_controls" {% if not errors %}style="display:none"{% endif %}>
+      <input type="submit" value="Save">
+      {% if errors %}
+        <a href="." class="btn link">Cancel</a>
+      {% else %}
+        <a href="#" class="btn link cancel_edit">Cancel</a>
+      {% endif %}
+    </div>
+    {{lib.csrf_token()}}
+  </form>
+{% endblock %}
+
+{% block extra_js %}
+  <script type="text/javascript">
+  $(document).ready(function(){
+    $('form.update_bins').each(function(){
+      var $form = $(this);
+      var $new_row = $('tr.new_bin', $form);
+      var $add_button = $('a.add_bin', $form);
+      var $save_controls = $('div.save_controls', $form);
+      $('a.add_bin').click(function(){
+        $save_controls.show();
+        $add_button.hide();
+        $new_row.show();
+        return false;
+      });
+      $('a.edit_bin').click(function(){
+        var $row = $(this).closest('tr');
+        $('td.view', $row).hide();
+        $('td.edit', $row).show();
+        $save_controls.show();
+        $add_button.hide();
+        $(this).css({opacity: 0.5});
+        return false;
+      });
+      $('a.del_bin').click(function(){
+        var $row = $(this).closest('tr');
+        $('input.delete_flag', $row).val('True');
+        $form.submit();
+      });
+      $('a.cancel_edit').click(function(){
+        $('td.view', $form).show();
+        $('td.edit', $form).hide();
+        $save_controls.hide();
+        $add_button.show();
+        $new_row.hide();
+        $('input', $new_row).val('');
+        $('span.err', $new_row).html('');
+        $('a.edit_bin').css({opacity: 1});
+        return false;
+      });
+    });
+  });
+  </script>
+{% endblock %}

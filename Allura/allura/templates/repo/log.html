@@ -1,0 +1,90 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% extends 'allura:templates/repo/repo_master.html' %}
+
+{% block title %}
+  {% if c.app.repo %}
+    Repository: {{c.app.repo.name}}
+  {% else %}
+    Repository
+  {% endif %}
+{% endblock %}
+
+{% block header %}{{c.app.config.options.mount_label}} Log{% endblock %}
+
+{% block content %}
+  <br style="clear:both"/>
+  {% if log %}
+    {{c.log_widget.display(value=log, limit=limit, count=count, next_commit=next_commit, is_file=is_file)}}
+  {% else %}
+    <p><b>No (more) commits</b></p>
+  {% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style type="text/css">
+    .rev.selected {
+        background-color: #FFFFBE;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function check_revisions(){
+        $("tr.rev").toggleClass("selected", false);
+        $("input:checked").toggleClass("selected", true);
+        $("input:checked").closest("tr").toggleClass("selected", true);
+        if ($("input:checked").length == 2){
+            var first_tr = $("input.revision").index($("input:checked:first"));
+            var last_tr = $("input.revision").index($("input:checked:last"));
+            $("tr.rev").slice(first_tr,last_tr).toggleClass("selected", true);
+        };
+    };
+    $(function() {
+        $(document).ready(function(){
+            check_revisions();
+        });
+        $(".revision").click(function(){
+            if ( $("input:checked").length > 2){
+                $("tr.selected").toggleClass("selected", false);
+                $("input.selected").removeAttr("checked");
+                $("input.selected").toggleClass("selected", false);
+            }
+            $(this).closest("tr").toggleClass("selected");
+            $(this).toggleClass("selected");
+            check_revisions();
+        });
+
+        $(".compare_revision").click(function(){
+            var n = $("input:checked").length;
+            if (n==2){
+                var first_revision = $("input.selected:first").attr("url_commit");
+                var second_revision = $("input.selected:last").attr("revision");
+                var path = "{{path}}";
+                var diff_url = first_revision+"tree/"+path+"?diff="+second_revision;
+                window.location.href = diff_url;
+            }
+            else {
+                alert("Please select two versions to compare");
+            };
+        });
+    });
+</script>
+{% endblock %}

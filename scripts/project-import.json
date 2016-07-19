@@ -1,0 +1,17 @@
+[{
+    "name": "Template Test 1",
+    "shortname": "template-test-1",
+    "summary": "My summary.",
+    "description": "My description.",
+    "admin": "admin1",
+    "external_homepage": "http://wwww.example.com/test",
+    "labels": ["label1", "label2"],
+    "trove_audiences": [
+        "Information Technology",
+        "Developers"],
+    "trove_licenses": [
+        "Apache License V2.0",
+        "GNU General Public License (GPL)",
+        "Public Domain"],
+    "awards": ["What?"]
+    }]

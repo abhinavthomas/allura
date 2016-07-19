@@ -1,0 +1,61 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% import 'allura:templates/jinja_master/lib.html' as lib with context %}
+<div class="attachments">
+  {% if attachments %}
+    {% set attachments = attachments|list %}
+    <strong>Attachments:</strong>
+    <div class="attachment_images">
+      {% for att in attachments if att.is_image() %}
+          <div class="attachment_thumb">
+            <a href="{{att.url()}}">
+              <img src="{{att.url()}}/thumb" alt="Thumbnail"/>
+            </a><br/>
+            {{att.filename}}
+            {% if edit_mode %}
+            <form method="post" action="{{att.url()}}" onsubmit="{{onsubmit}}">
+              <input type="hidden" name="delete" value="True"/>
+              <input type="submit" value="Delete File"/>
+              {{lib.csrf_token()}}
+            </form>
+            {% endif %}
+          </div>
+      {% endfor %}
+    </div>
+    <div class="attachment_files">
+    {% for att in attachments if not att.is_image() %}
+      <div>
+        <form method="post" action="{{att.url()}}" onsubmit="{{onsubmit}}">
+          <a href="{{att.url()}}">{{att.filename}}</a>
+          ({{att.length}} bytes)
+          <input type="hidden" name="delete" value="True"/>
+          {% if edit_mode %}
+          <span>
+            <input type="submit" value="Delete File"/>
+          </span>
+          {% endif %}
+          {{lib.csrf_token()}}
+        </form>
+      </div>
+      <div style="clear:both"></div>
+    {% endfor %}
+    </div>
+  {% endif %}
+  <div style="clear:both"></div>
+</div>

@@ -1,0 +1,104 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% extends 'allura:templates/repo/repo_master.html' %}
+
+{% block title %}
+  {% if c.app.repo %}
+    SVN Repository: {{c.app.repo.name}}
+  {% else %}
+    SVN Repository
+  {% endif %}
+{% endblock %}
+
+{% block header %}{{c.app.config.options.mount_label}}{% endblock %}
+
+{% block content %}
+  {{ clone_info(c.app.repo) }}
+  {% if log %}
+    <h2>Recent Commits</h2>
+    {{c.log_widget.display(value=log, show_paging=False,
+                           limit=limit, page=page, count=count)}}
+    {% if count > limit %}
+      <a href="{{c.app.url}}log?page=1">More</a>
+    {% endif %}
+  {% elif is_empty %}
+    {% if h.has_access(c.app, 'write')() %}
+    <div class="message warning scm-learn-basics">
+      <div class="content">
+        <img src="{{g.app_static('images/svn.png')}}" style="float:left">
+        <h2>New to Subversion?</h2>
+        <a href="http://svnbook.red-bean.com/">Learn the basics</a>.
+      </div>
+    </div>
+
+    <div class="message error scm-empty-repo">
+      <h6>Empty Repository</h6>
+      <div class="content">
+        It looks like this Subversion repository doesn't have any files in it. Let's commit your project code now.
+      </div>
+    </div>
+
+    <h2>Create default directories</h2>
+    <p>It's common practice among Subversion users to create a <code>/trunk</code>,
+      <code>/branches</code>, and <code>/tags</code> directory at the root of each
+      repository. If you'd like to do that, follow these instructions:
+    <p>
+    <div class="codehilite">
+      <pre>
+{{c.app.repo.clone_command('rw')}}
+cd {{c.app.repo.suggested_clone_dest_path()}}
+mkdir trunk branches tags
+svn add trunk branches tags
+svn ci -m "Add initial directories"
+      </pre>
+    </div>
+    <p>To make the default checkout url for your repo point to your new
+      <code>/trunk</code> directory instead of the root, click the
+      <i class="fa fa-lock"></i> icon above to unlock the project menu.
+      Then click on <i class="fa fa-cog"></i> icon of your SVN tool and on
+      'Checkout URL' in menu, add 'trunk' to the
+      end of the url, and click 'Save.'
+    </p>
+
+    <h2>Import project on disk to Subversion</h2>
+    <div class="codehilite">
+      <pre>cd existing-{{c.app.repo.suggested_clone_dest_path()}}
+svn import {{c.app.repo.clone_url('rw', c.user.username)}} -m "Initial commit"</pre>
+    </div>
+
+    <h2>Import remote repository to Subversion</h2>
+    <p>Use the <a href="{{c.project.url()}}admin/{{c.app.config.options.mount_point}}/importer/">repository clone tool</a>
+    then check out a working copy once you receive a completion email.</p>
+    &nbsp;
+    <div class="message info scm-ssh-key">
+      <div class="content">
+      Did you get asked for your {{config.site_name}} password during this process? You can securely use your Subversion repository and avoid having to re-enter your password by <a href="https://{{config.domain}}/account/ssh">setting up an ssh-key</a>.
+      </div>
+    </div>
+    {% else %}
+    <p><b>No (more) commits</b></p>
+    {% endif %}
+  {% elif c.app.repo.status == 'ready' %}
+    {% if h.has_access(c.app, 'write')() %}
+    <p>The metadata for this repository is missing.  To fix, please try a <a href="{{c.app.url}}refresh">refresh</a>.</p>
+    {% else %}
+    <p><b>No (more) commits</b></p>
+    {% endif %}
+  {% endif %}
+{% endblock %}

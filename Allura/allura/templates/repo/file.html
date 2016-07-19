@@ -1,0 +1,96 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% extends 'allura:templates/repo/repo_master.html' %}
+{% import 'allura:templates/jinja_master/lib.html' as lib with context %}
+{% do g.register_forge_css('css/forge/hilite.css') %}
+
+{% block title %}
+  {{c.project.name}} / {{c.app.config.options.mount_label}} /
+  {{blob.commit.shorthand_id()}}
+  {{h.really_unicode(blob.path())}}
+{% endblock %}
+
+{% block header %}
+<a href="{{blob.commit.url()}}">{{blob.commit.shorthand_id()}}</a>:
+{{lib.path_links(blob.path().split('/')[1:-1])}} {{h.really_unicode(blob.name)}}
+{% endblock %}
+
+{% block actions %}
+{{ lib.maximize_content_button() }}
+{{ g.icons['history'].render(href='%slog/?path=%s' % (blob.commit.url(), blob.path()), show_title=True) }}
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script type="text/javascript">(function() {
+  $(window).bind('hashchange', function(e) {
+    var hash = window.location.hash.substring(1);
+	if ('originalEvent' in e && 'oldURL' in e.originalEvent) {
+      $('#' + e.originalEvent.oldURL.split('#')[1]).css('background-color', 'transparent');
+	}
+    if (hash !== '' && hash.substring(0, 1) === 'l' && !isNaN(hash.substring(1))) {
+      $('#' + hash).css('background-color', '#ffff99');
+    }
+  }).trigger('hashchange');
+
+  var clicks = 0;
+  $('.code_block').each(function(index, element) {
+    $(element).bind('click', function() {
+      // Trick to ignore double and triple clicks
+      clicks++;
+      if (clicks == 1) {
+        setTimeout(function() {
+          if (clicks == 1) {
+            var hash = window.location.hash.substring(1);
+            if (hash !== '' && hash.substring(0, 1) === 'l' && !isNaN(hash.substring(1))) {
+              $('#' + hash).css('background-color', 'transparent');
+            }
+            $(element).css('background-color', '#ffff99');
+            window.location.href = '#' + $(element).attr('id');
+          };
+          clicks = 0;
+        }, 500);
+      };
+    });
+  });
+}());
+</script>
+{% endblock %}
+{% block content %}
+  {% if blob.has_image_view %}
+    <p><a href="?format=raw">Download this file</a></p>
+    <img src="?format=raw" alt=""/>
+  {% elif blob.has_html_view or blob.has_pypeline_view or force_display %}
+    <p><a href="?format=raw">Download this file</a></p>
+    <div class="clip grid-19 codebrowser">
+      <h3>
+        {{ stats.line_count }} lines ({{ stats.data_line_count }} with data), {{ stats.code_size|filesizeformat }}
+      </h3>
+      {% if blob.has_pypeline_view %}
+        {{h.render_any_markup(blob.name, blob.text, code_mode=True)}}
+      {% else %}
+        {{g.highlight(blob.text, filename=blob.name)}}
+      {% endif %}
+    </div>
+  {% else %}
+    <p>{{h.really_unicode(blob.name)}} is not known to be viewable in your browser.
+    Try to <a href="?force=True">display it</a> anyway or
+    <a href="?format=raw">download it</a> instead.</p>
+  {% endif %}
+{% endblock %}

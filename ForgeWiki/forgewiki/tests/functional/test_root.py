@@ -1,0 +1,879 @@
+# -*- coding: utf-8 -*-
+
+#       Licensed to the Apache Software Foundation (ASF) under one
+#       or more contributor license agreements.  See the NOTICE file
+#       distributed with this work for additional information
+#       regarding copyright ownership.  The ASF licenses this file
+#       to you under the Apache License, Version 2.0 (the
+#       "License"); you may not use this file except in compliance
+#       with the License.  You may obtain a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#       Unless required by applicable law or agreed to in writing,
+#       software distributed under the License is distributed on an
+#       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+#       KIND, either express or implied.  See the License for the
+#       specific language governing permissions and limitations
+#       under the License.
+
+import os
+import StringIO
+import allura
+import json
+
+import PIL
+from nose.tools import assert_true, assert_equal, assert_in, assert_not_equal, assert_not_in
+from ming.orm.ormsession import ThreadLocalORMSession
+from mock import patch
+from tg import config
+
+from allura import model as M
+from allura.lib import helpers as h
+from allura.tests import decorators as td
+from alluratest.controller import TestController
+
+from forgewiki import model
+
+
+class TestRootController(TestController):
+
+    def setUp(self):
+        super(TestRootController, self).setUp()
+        self.setup_with_tools()
+
+    @td.with_wiki
+    def setup_with_tools(self):
+        pass
+
+    def _find_edit_form(self, resp):
+        cond = lambda f: f.id == 'page_edit_form'
+        return self.find_form(resp, cond)
+
+    def test_root_index(self):
+        page_url = h.urlquote(u'/wiki/tést/')
+        r = self.app.get(page_url).follow()
+        assert u'tést' in r
+        assert 'Create Page' in r
+        # No 'Create Page' button if user doesn't have 'create' perm
+        r = self.app.get(page_url,
+                         extra_environ=dict(username='*anonymous')).follow()
+        assert 'Create Page' not in r
+
+    @td.with_wiki
+    def test_create_wiki_page(self):
+        url = u"/p/test/wiki/create_wiki_page/"
+        r = self.app.get(url)
+        assert u'test' in r
+        assert u'Create page' in r.body
+
+    def test_root_markdown_syntax(self):
+        response = self.app.get('/wiki/markdown_syntax/')
+        assert 'Markdown Syntax' in response
+
+    def test_root_browse_tags(self):
+        response = self.app.get('/wiki/browse_tags/')
+        assert 'Browse Labels' in response
+
+    def test_root_browse_pages(self):
+        response = self.app.get('/wiki/browse_pages/')
+        assert 'Browse Pages' in response
+
+    def test_root_new_page(self):
+        response = self.app.get('/wiki/new_page?title=' + h.urlquote(u'tést'))
+        assert u'tést' in response
+
+    def test_root_new_search(self):
+        self.app.get(h.urlquote(u'/wiki/tést/'))
+        response = self.app.get('/wiki/search/?q=' + h.urlquote(u'tést'))
+        assert u'Search wiki: tést' in response
+
+    def test_feed(self):
+        for ext in ['', '.rss', '.atom']:
+            self.app.get('/wiki/feed%s' % ext, status=200)
+
+    @patch('allura.lib.search.search')
+    def test_search(self, search):
+        r = self.app.get('/wiki/search/?q=test')
+        assert_in(
+            '<a href="/wiki/search/?q=test&amp;sort=score+asc" class="strong">relevance</a>', r)
+        assert_in(
+            '<a href="/wiki/search/?q=test&amp;sort=mod_date_dt+desc" class="">date</a>', r)
+
+        p = M.Project.query.get(shortname='test')
+        r = self.app.get('/wiki/search/?q=test&sort=score+asc')
+        solr_query = {
+            'short_timeout': True,
+            'ignore_errors': False,
+            'rows': 25,
+            'start': 0,
+            'qt': 'dismax',
+            'qf': 'title^2 text',
+            'pf': 'title^2 text',
+            'fq': [
+                'project_id_s:%s' % p._id,
+                'mount_point_s:wiki',
+                '-deleted_b:true',
+                'type_s:("WikiPage" OR "WikiPage Snapshot")',
+                'is_history_b:False',
+            ],
+            'hl': 'true',
+            'hl.simple.pre': '#ALLURA-HIGHLIGHT-START#',
+            'hl.simple.post': '#ALLURA-HIGHLIGHT-END#',
+            'sort': 'score asc',
+        }
+        search.assert_called_with('test', **solr_query)
+
+        r = self.app.get(
+            '/wiki/search/?q=test&search_comments=on&history=on&sort=mod_date_dt+desc')
+        solr_query['fq'][
+            3] = 'type_s:("WikiPage" OR "WikiPage Snapshot" OR "Post")'
+        solr_query['fq'].remove('is_history_b:False')
+        solr_query['sort'] = 'mod_date_dt desc'
+        search.assert_called_with('test', **solr_query)
+
+        r = self.app.get('/wiki/search/?q=test&parser=standard')
+        solr_query['sort'] = 'score desc'
+        solr_query['fq'][3] = 'type_s:("WikiPage" OR "WikiPage Snapshot")'
+        solr_query['fq'].append('is_history_b:False')
+        solr_query.pop('qt')
+        solr_query.pop('qf')
+        solr_query.pop('pf')
+        search.assert_called_with('test', **solr_query)
+
+    def test_search_help(self):
+        r = self.app.get('/wiki/search/?q=test')
+        btn = r.html.find('a', attrs={'class': 'icon btn search_help_modal'})
+        assert btn is not None, "Can't find a help button"
+        div = r.html.find('div', attrs={'id': 'lightbox_search_help_modal'})
+        assert div is not None, "Can't find help text"
+        assert_in('To search for an exact phrase', div.text)
+
+    def test_page_index(self):
+        response = self.app.get('/wiki/tést/')
+        assert 'tést' in response.follow()
+
+    def test_page_edit(self):
+        self.app.get('/wiki/tést/index')
+        response = self.app.post('/wiki/tést/edit')
+        assert 'tést' in response
+
+    @patch('forgewiki.wiki_main.g.director.create_activity')
+    def test_activity(self, create_activity):
+        d = dict(title='foo', text='footext')
+        self.app.post('/wiki/foo/update', params=d)
+        assert create_activity.call_count == 1
+        assert create_activity.call_args[0][1] == 'created'
+        create_activity.reset_mock()
+        d = dict(title='foo', text='new footext')
+        self.app.post('/wiki/foo/update', params=d)
+        assert create_activity.call_count == 1
+        assert create_activity.call_args[0][1] == 'modified'
+        create_activity.reset_mock()
+        d = dict(title='new foo', text='footext')
+        self.app.post('/wiki/foo/update', params=d)
+        assert create_activity.call_count == 1
+        assert create_activity.call_args[0][1] == 'renamed'
+
+    def test_labels(self):
+        response = self.app.post(
+            '/wiki/foo-bar/update',
+            params={
+                'title': 'foo',
+                'text': 'sometext',
+                'labels': 'test label',
+                'viewable_by-0.id': 'all'}).follow()
+        assert_in('<a href="/p/test/wiki/search/?q=labels_t:%22test label%22&parser=standard">test label (1)</a>',
+                  response)
+
+    def test_title_slashes(self):
+        # forward slash not allowed in wiki page title - converted to dash
+        response = self.app.post(
+            '/wiki/foo-bar/update',
+            params={
+                'title': 'foo/bar',
+                'text': 'sometext',
+                'labels': '',
+                'viewable_by-0.id': 'all'}).follow()
+        assert 'foo-bar' in response
+        assert 'foo-bar' in response.request.url
+
+    def test_dotted_page_name(self):
+        r = self.app.post(
+            '/wiki/page.dot/update',
+            params={
+                'title': 'page.dot',
+                'text': 'text1',
+                'labels': '',
+                'viewable_by-0.id': 'all'}).follow()
+        assert 'page.dot' in r
+
+    def test_subpage_attempt(self):
+        self.app.get('/wiki/tést/')
+        self.app.post(
+            '/wiki/tést/update',
+            params={
+                'title': 'tést',
+                'text': 'text1',
+                'labels': '',
+                'viewable_by-0.id': 'all'})
+        assert '/p/test/wiki/Home/' in self.app.get('/wiki/tést/Home/')
+        self.app.get('/wiki/tést/notthere/', status=404)
+
+    def test_page_history(self):
+        self.app.get('/wiki/tést/')
+        self.app.post(
+            '/wiki/tést/update',
+            params={
+                'title': 'tést',
+                'text': 'text1',
+                'labels': '',
+                'viewable_by-0.id': 'all'})
+        self.app.post(
+            '/wiki/tést/update',
+            params={
+                'title': 'tést',
+                'text': 'text2',
+                'labels': '',
+                'viewable_by-0.id': 'all'})
+        response = self.app.get('/wiki/tést/history')
+        assert 'tést' in response
+        # two revisions are shown
+        assert '2 by Test Admin' in response
+        assert '1 by Test Admin' in response
+        # you can revert to an old revison, but not the current one
+        assert response.html.find('a', {'data-dialog-id': '1'})
+        assert not response.html.find('a', {'data-dialog-id': '2'})
+        response = self.app.get('/wiki/tést/history',
+                                extra_environ=dict(username='*anonymous'))
+        # two revisions are shown
+        assert '2 by Test Admin' in response
+        assert '1 by Test Admin' in response
+        # you cannot revert to any revision
+        assert not response.html.find('a', {'data-dialog-id': '1'})
+        assert not response.html.find('a', {'data-dialog-id': '2'})
+
+    def test_page_diff(self):
+        self.app.post(
+            '/wiki/tést/update',
+            params={
+                'title': 'tést',
+                'text': 'sometext',
+                'labels': '',
+                'viewable_by-0.id': 'all'})
+        self.app.post('/wiki/tést/revert', params=dict(version='1'))
+        response = self.app.get('/wiki/tést/diff?v1=0&v2=0')
+        assert 'tést' in response
+        d = dict(title='testdiff', text="""**Optionally**, you may also want to remove all the unused accounts that have accumulated (one was created for *every* logged in SF-user who has visited your MediaWiki hosted app):
+
+                                            ~~~~~
+                                            php removeUnusedAccounts.php --delete
+                                            ~~~~~
+
+                                            #### 6) Import image (and other) files into your Mediawiki install ####
+
+                                            Upload the backup of your data files to the project web.
+
+                                            ~~~~~
+                                            scp projectname_mediawiki_files.tar.gz USERNAME@web.domain.net:
+                                            ~~~~~
+
+                                            In the project web shell, unpack the files to the images directory of you wiki installation. In the backup, the images are in a subfolder *projectname*, so follow these steps:
+
+                                            ~~~~~
+                                            cd wiki
+                                            mkdir oldimages
+                                            cd oldimages
+                                            tar -xvzf ../../../projectname_mediawiki_files.tar.gz
+                                            mv projectname/* ../images/
+                                            cd ..
+                                            rm -r oldimages
+                                            # Now fix permissons. Wrong permissions may cause massive slowdown!
+                                            chown yournick:apache images/ --recursive
+                                            chmod 775 images/ --recursive
+                                            ~~~~~
+
+                                            **TODO: FIXME:** The following can't be quite correct:
+
+                                            Now hit your wiki a few times from a browser. Initially, it will be dead slow, as it is trying to build thumbnails for the images. And it will time out, a lot. Keep hitting reload, until it works.
+
+                                            **Note:** The logo shown in the sidebar is no longer stored as an object in the wiki (as it was in the Hosted App installation). Rather save it as a regular file, then edit LocalSettings.php, adding""")
+        self.app.post('/wiki/testdiff/update', params=d)
+        d = dict(title='testdiff', text="""**Optionally**, you may also want to remove all the unused accounts that have accumulated (one was created for *every* logged in SF-user who has visited your MediaWiki hosted app):
+
+                                            ~~~~~
+                                            php removeUnusedAccounts.php --delete
+                                            ~~~~~
+
+                                            #### 6) Import image (and other) files into your Mediawiki install ####
+
+                                            Upload the backup of your data files to the project web.
+
+                                            ~~~~~
+                                            scp projectname_mediawiki_files.tar.gz USERNAME@web.domain.net:
+                                            ~~~~~
+
+                                            In the project web shell, unpack the files to the images directory of you wiki installation. In the backup, the images are in a subfolder *projectname*, so follow these steps:
+
+                                            ~~~~~
+                                            cd wiki
+                                            mkdir oldimages
+                                            cd oldimages
+                                            tar -xvzf ../../../projectname_mediawiki_files.tar.gz
+                                            mv projectname/* ../images/
+                                            cd ..
+                                            rm -r oldimages
+                                            # Now fix permissions. Wrong permissions may cause a massive slowdown!
+                                            chown yournick:apache images/ --recursive
+                                            chmod 775 images/ --recursive
+                                            ~~~~~
+
+                                            **TODO: FIXME:** The following can't be quite correct:
+
+                                            Now hit your wiki a few times from a browser. Initially, it will be dead slow, as it is trying to build thumbnails for the images. And it will time out, a lot. Keep hitting reload, until it works.
+
+                                            **Note:** The logo shown in the sidebar is no longer stored as an object in the wiki (as it was in the Hosted App installation). Rather save it as a regular file, then edit LocalSettings.php, adding""")
+        self.app.post('/wiki/testdiff/update', params=d)
+        response = self.app.get('/wiki/testdiff/diff?v1=1&v2=2')
+        assert_in('# Now fix <del> permissons. </del> <ins> permissions. </ins> '
+                  'Wrong permissions may cause <ins> a </ins> massive slowdown!',
+                  response)
+        response = self.app.get('/wiki/testdiff/diff?v1=2&v2=1')
+        assert_in('# Now fix <del> permissions. </del> <ins> permissons. </ins> '
+                  'Wrong permissions may cause <del> a </del> massive slowdown!',
+                  response)
+
+    def test_page_raw(self):
+        self.app.post(
+            '/wiki/TEST/update',
+            params={
+                'title': 'TEST',
+                'text': 'sometext',
+                'labels': '',
+                'viewable_by-0.id': 'all'})
+        response = self.app.get('/wiki/TEST/raw')
+        assert 'TEST' in response
+
+    def test_page_revert_no_text(self):
+        self.app.post(
+            '/wiki/tést/update',
+            params={
+                'title': 'tést',
+                'text': '',
+                'labels': '',
+                'viewable_by-0.id': 'all'})
+        response = self.app.post('/wiki/tést/revert', params=dict(version='1'))
+        assert '.' in response.json['location']
+        response = self.app.get('/wiki/tést/')
+        assert 'tést' in response
+
+    def test_page_revert_with_text(self):
+        self.app.get('/wiki/tést/')
+        self.app.post(
+            '/wiki/tést/update',
+            params={
+                'title': 'tést',
+                'text': 'sometext',
+                'labels': '',
+                'viewable_by-0.id': 'all'})
+        response = self.app.post('/wiki/tést/revert', params=dict(version='1'))
+        assert '.' in response.json['location']
+        response = self.app.get('/wiki/tést/')
+        assert 'tést' in response
+
+    @patch('forgewiki.wiki_main.g.spam_checker')
+    def test_page_update(self, spam_checker):
+        self.app.get('/wiki/tést/')
+        response = self.app.post(
+            '/wiki/tést/update',
+            params={
+                'title': 'tést',
+                'text': 'sometext',
+                'labels': '',
+                'viewable_by-0.id': 'all'})
+        assert_equal(spam_checker.check.call_args[0][0], u'tést\nsometext')
+        assert 'tést' in response
+
+    def test_page_label_unlabel(self):
+        self.app.get('/wiki/tést/')
+        response = self.app.post(
+            '/wiki/tést/update',
+            params={
+                'title': 'tést',
+                'text': 'sometext',
+                'labels': 'yellow,green',
+                'viewable_by-0.id': 'all'})
+        assert 'tést' in response
+        response = self.app.post(
+            '/wiki/tést/update',
+            params={
+                'title': 'tést',
+                'text': 'sometext',
+                'labels': 'yellow',
+                'viewable_by-0.id': 'all'})
+        assert 'tést' in response
+
+    def test_page_label_count(self):
+        labels = "label"
+        for i in range(1, 100):
+            labels += ',label%s' % i
+        self.app.post(
+            '/wiki/tést/update',
+            params={
+                'title': 'tést',
+                'text': 'sometext',
+                'labels': labels,
+                'viewable_by-0.id': 'all'})
+        r = self.app.get('/wiki/browse_tags/')
+        assert 'results of 100 ' in r
+        assert '<div class="page_list">' in r
+        assert '(Page 1 of 4)' in r
+        assert '<td>label30</td>' in r
+        assert '<td>label1</td>' in r
+        r = self.app.get('/wiki/browse_tags/?page=3')
+        assert '<td>label77</td>' in r
+        assert '<td>label99</td>' in r
+
+    def test_new_attachment(self):
+        self.app.post(
+            '/wiki/tést/update',
+            params={
+                'title': 'tést',
+                'text': 'sometext',
+                'labels': '',
+                'viewable_by-0.id': 'all'})
+        content = file(__file__).read()
+        self.app.post('/wiki/tést/attach',
+                      upload_files=[('file_info', 'test_root.py', content)])
+        response = self.app.get('/wiki/tést/')
+        assert 'test_root.py' in response
+
+    def test_attach_two_files(self):
+        self.app.post(
+            '/wiki/tést/update',
+            params={
+                'title': 'tést',
+                'text': 'sometext',
+                'labels': '',
+                'viewable_by-0.id': 'all'})
+        content = file(__file__).read()
+        self.app.post('/wiki/tést/attach',
+                      upload_files=[('file_info', 'test1.py', content), ('file_info', 'test2.py', content)])
+        response = self.app.get('/wiki/tést/')
+        assert 'test1.py' in response
+        assert 'test2.py' in response
+
+    def test_new_text_attachment_content(self):
+        self.app.post(
+            '/wiki/tést/update',
+            params={
+                'title': 'tést',
+                'text': 'sometext',
+                'labels': '',
+                'viewable_by-0.id': 'all'})
+        file_name = 'test_root.py'
+        file_data = file(__file__).read()
+        upload = ('file_info', file_name, file_data)
+        self.app.post('/wiki/tést/attach', upload_files=[upload])
+        page_editor = self.app.get('/wiki/tést/edit')
+        download = page_editor.click(description=file_name)
+        assert_true(download.body == file_data)
+
+    def test_new_image_attachment_content(self):
+        self.app.post('/wiki/TEST/update', params={
+            'title': 'TEST',
+            'text': 'sometext',
+            'labels': '',
+            'viewable_by-0.id': 'all'})
+        file_name = 'neo-icon-set-454545-256x350.png'
+        file_path = os.path.join(
+            allura.__path__[0], 'nf', 'allura', 'images', file_name)
+        file_data = file(file_path).read()
+        upload = ('file_info', file_name, file_data)
+        self.app.post('/wiki/TEST/attach', upload_files=[upload])
+        h.set_context('test', 'wiki', neighborhood='Projects')
+        page = model.Page.query.find(dict(title='TEST')).first()
+        filename = page.attachments[0].filename
+
+        uploaded = PIL.Image.open(file_path)
+        r = self.app.get('/wiki/TEST/attachment/' + filename)
+        downloaded = PIL.Image.open(StringIO.StringIO(r.body))
+        assert uploaded.size == downloaded.size
+        r = self.app.get('/wiki/TEST/attachment/' + filename + '/thumb')
+
+        thumbnail = PIL.Image.open(StringIO.StringIO(r.body))
+        assert thumbnail.size == (255, 255)
+
+        # Make sure thumbnail is absent
+        r = self.app.get('/wiki/TEST/')
+        img_srcs = [i['src'] for i in r.html.findAll('img')]
+        assert ('/p/test/wiki/TEST/attachment/' +
+                filename) not in img_srcs, img_srcs
+
+    def test_sidebar_static_page(self):
+        response = self.app.get('/wiki/tést/')
+        assert 'Edit this page' not in response
+        assert 'Related Pages' not in response
+
+    def test_related_links(self):
+        response = self.app.get('/wiki/TEST/').follow()
+        assert 'Edit TEST' in response
+        assert 'Related' not in response
+        self.app.post('/wiki/TEST/update', params={
+            'title': 'TEST',
+            'text': 'sometext',
+            'labels': '',
+            'viewable_by-0.id': 'all'})
+        self.app.post('/wiki/aaa/update', params={
+            'title': 'aaa',
+            'text': '',
+            'labels': '',
+            'viewable_by-0.id': 'all'})
+        self.app.post('/wiki/bbb/update', params={
+            'title': 'bbb',
+            'text': '',
+            'labels': '',
+            'viewable_by-0.id': 'all'})
+
+        h.set_context('test', 'wiki', neighborhood='Projects')
+        a = model.Page.query.find(dict(title='aaa')).first()
+        a.text = '\n[TEST]\n'
+        b = model.Page.query.find(dict(title='TEST')).first()
+        b.text = '\n[bbb]\n'
+        ThreadLocalORMSession.flush_all()
+        M.MonQTask.run_ready()
+        ThreadLocalORMSession.flush_all()
+        ThreadLocalORMSession.close_all()
+
+        response = self.app.get('/wiki/TEST/')
+        assert 'Related' in response
+        assert 'aaa' in response
+        assert 'bbb' in response
+
+    def test_show_discussion(self):
+        self.app.post('/wiki/tést/update', params={
+            'title': 'tést',
+            'text': 'sometext',
+            'labels': '',
+            'viewable_by-0.id': 'all'})
+        wiki_page = self.app.get('/wiki/tést/')
+        assert wiki_page.html.find('div', {'id': 'new_post_holder'})
+        options_admin = self.app.get(
+            '/admin/wiki/options', validate_chunk=True)
+        assert options_admin.form['show_discussion'].checked
+        options_admin.form['show_discussion'].checked = False
+        options_admin.form.submit()
+        options_admin2 = self.app.get(
+            '/admin/wiki/options', validate_chunk=True)
+        assert not options_admin2.form['show_discussion'].checked
+        wiki_page2 = self.app.get('/wiki/tést/')
+        assert not wiki_page2.html.find('div', {'id': 'new_post_holder'})
+
+    def test_show_left_bar(self):
+        self.app.post('/wiki/tést/update', params={
+            'title': 'tést',
+            'text': 'sometext',
+            'labels': '',
+            'viewable_by-0.id': 'all'})
+        wiki_page = self.app.get('/wiki/tést/')
+        assert wiki_page.html.find('ul', {'class': 'sidebarmenu'})
+        options_admin = self.app.get(
+            '/admin/wiki/options', validate_chunk=True)
+        assert options_admin.form['show_left_bar'].checked
+        options_admin.form['show_left_bar'].checked = False
+        options_admin.form.submit()
+        options_admin2 = self.app.get(
+            '/admin/wiki/options', validate_chunk=True)
+        assert not options_admin2.form['show_left_bar'].checked
+        wiki_page2 = self.app.get(
+            '/wiki/tést/', extra_environ=dict(username='*anonymous'))
+        assert not wiki_page2.html.find('ul', {'class': 'sidebarmenu'})
+        wiki_page3 = self.app.get('/wiki/tést/')
+        assert not wiki_page3.html.find('ul', {'class': 'sidebarmenu'})
+
+    def test_show_metadata(self):
+        self.app.post('/wiki/tést/update', params={
+            'title': 'tést',
+            'text': 'sometext',
+            'labels': '',
+            'viewable_by-0.id': 'all'})
+        wiki_page = self.app.get('/wiki/tést/')
+        assert wiki_page.html.find('div', {'class': 'editbox'})
+        options_admin = self.app.get(
+            '/admin/wiki/options', validate_chunk=True)
+        assert options_admin.form['show_right_bar'].checked
+        options_admin.form['show_right_bar'].checked = False
+        options_admin.form.submit()
+        options_admin2 = self.app.get(
+            '/admin/wiki/options', validate_chunk=True)
+        assert not options_admin2.form['show_right_bar'].checked
+        wiki_page2 = self.app.get('/wiki/tést/')
+        assert not wiki_page2.html.find('div', {'class': 'editbox'})
+
+    def test_edit_mount_label(self):
+        r = self.app.get('/admin/wiki/edit_label', validate_chunk=True)
+        assert r.form['mount_label'].value == 'Wiki'
+        r = self.app.post('/admin/wiki/update_label', params=dict(
+            mount_label='Tricky Wiki'))
+        assert M.MonQTask.query.find({
+            'task_name': 'allura.tasks.event_tasks.event',
+            'args': 'project_menu_updated'
+        }).all()
+        r = self.app.get('/admin/wiki/edit_label', validate_chunk=True)
+        assert r.form['mount_label'].value == 'Tricky Wiki'
+
+    def test_page_links_are_colored(self):
+        self.app.get('/wiki/space%20page/')
+        params = {
+            'title': 'space page',
+            'text': '''There is a space in the title!''',
+            'labels': '',
+            'viewable_by-0.id': 'all'}
+        self.app.post('/wiki/space%20page/update', params=params)
+        self.app.get('/wiki/TEST/')
+        params = {
+            'title': 'TEST',
+            'text': '''
+* Here is a link to [this page](TEST)
+* Here is a link to [another page](Some page which does not exist)
+* Here is a link to [space page space](space page)
+* Here is a link to [space page escape](space%20page)
+* Here is a link to [TEST]
+* Here is a link to [Some page which does not exist]
+* Here is a link to [space page]
+* Here is a link to [space%20page]
+* Here is a link to [another attach](TEST/attachment/attach.txt)
+* Here is a link to [attach](TEST/attachment/test_root.py)
+''',
+            'labels': '',
+            'viewable_by-0.id': 'all'}
+        self.app.post('/wiki/TEST/update', params=params)
+        content = file(__file__).read()
+        self.app.post('/wiki/TEST/attach',
+                      upload_files=[('file_info', 'test_root.py', content)])
+        r = self.app.get('/wiki/TEST/')
+        found_links = 0
+        for link in r.html.findAll('a'):
+            if link.contents == ['this page']:
+                assert 'notfound' not in link.get('class', '')
+                found_links += 1
+            if link.contents == ['another page']:
+                assert 'notfound' not in link.get('class', '')
+                found_links += 1
+            if link.contents == ['space page space']:
+                assert 'notfound' not in link.get('class', '')
+                found_links += 1
+            if link.contents == ['space page escape']:
+                assert 'notfound' not in link.get('class', '')
+                found_links += 1
+            if link.contents == ['[TEST]']:
+                assert 'notfound' not in link.get('class', '')
+                found_links += 1
+            if link.contents == ['[Some page which does not exist]']:
+                assert 'notfound' in link.get('class', '')
+                found_links += 1
+            if link.contents == ['[space page]']:
+                assert 'notfound' not in link.get('class', '')
+                found_links += 1
+            if link.contents == ['[space%20page]']:
+                assert 'notfound' not in link.get('class', '')
+                found_links += 1
+            if link.contents == ['another attach']:
+                assert 'notfound' in link.get('class', '')
+                found_links += 1
+            if link.contents == ['attach']:
+                assert 'notfound' not in link.get('class', '')
+                found_links += 1
+        assert found_links == 10, 'Wrong number of links found'
+
+    def test_home_rename(self):
+        assert 'The resource was found at http://localhost/p/test/wiki/Home/;' in self.app.get(
+            '/p/test/wiki/')
+        req = self.app.get('/p/test/wiki/Home/edit')
+        form = self._find_edit_form(req)
+        form['title'].value = 'new_title'
+        form.submit()
+        assert 'The resource was found at http://localhost/p/test/wiki/new_title/;' in self.app.get(
+            '/p/test/wiki/')
+
+    @patch.dict('allura.lib.app_globals.config', markdown_cache_threshold='0')
+    def test_cached_html(self):
+        """Ensure cached html is not escaped."""
+        html = '<p><span>My Html</span></p>'
+        self.app.post('/wiki/cache/update', params={
+            'title': 'cache',
+            'text': html,
+            'labels': '',
+            'viewable_by-0.id': 'all'})
+        # first request caches html, second serves from cache
+        r = self.app.get('/wiki/cache/')
+        r = self.app.get('/wiki/cache/')
+        assert_true(html in r)
+
+    def test_page_delete(self):
+        self.app.post('/wiki/aaa/update', params={
+            'title': 'aaa',
+            'text': '111',
+            'labels': '',
+            'viewable_by-0.id': 'all'})
+        self.app.post('/wiki/bbb/update', params={
+            'title': 'bbb',
+            'text': '222',
+            'labels': '',
+            'viewable_by-0.id': 'all'})
+        response = self.app.get('/wiki/browse_pages/')
+        assert 'aaa' in response
+        assert 'bbb' in response
+        self.app.post('/wiki/bbb/delete')
+        response = self.app.get('/wiki/browse_pages/')
+        assert 'aaa' in response
+        assert '?deleted=True">bbb' in response
+        n = M.Notification.query.get(subject="[test:wiki] test-admin removed page bbb")
+        assert '222' in n.text
+
+    def test_mailto_links(self):
+        self.app.get('/wiki/test_mailto/')
+        params = {
+            'title': 'test_mailto',
+            'text': '''
+* Automatic mailto #1 <darth.vader@deathstar.org>
+* Automatic mailto #2 <mailto:luke.skywalker@tatooine.org>
+* Handmaid mailto <a href="mailto:yoda@jedi.org">Email Yoda</a>
+''',
+            'labels': '',
+            'viewable_by-0.id': 'all'}
+        self.app.post('/wiki/test_mailto/update', params=params)
+        r = self.app.get('/wiki/test_mailto/')
+        mailto_links = 0
+        for link in r.html.findAll('a'):
+            if link.get('href') == 'mailto:darth.vader@deathstar.org':
+                assert 'notfound' not in link.get('class', '')
+                mailto_links += 1
+            if link.get('href') == 'mailto:luke.skywalker@tatooine.org':
+                assert 'notfound' not in link.get('class', '')
+                mailto_links += 1
+            if link.get('href') == 'mailto:yoda@jedi.org':
+                assert link.contents == ['Email Yoda']
+                assert 'notfound' not in link.get('class', '')
+                mailto_links += 1
+        assert mailto_links == 3, 'Wrong number of mailto links'
+
+    def test_user_browse_page(self):
+        r = self.app.get('/wiki/browse_pages/')
+        assert '<td>Test Admin (test-admin)</td>' in r
+
+    def test_subscribe(self):
+        user = M.User.query.get(username='test-user')
+        # user is not subscribed
+        assert not M.Mailbox.subscribed(user_id=user._id)
+        r = self.app.get('/p/test/wiki/Home/', extra_environ={'username': str(user.username)})
+        sidebar_menu = r.html.find('div', attrs={'id': 'sidebar'})
+        assert 'Subscribe to wiki' in str(sidebar_menu)
+        # subscribe
+        self.app.post('/p/test/wiki/subscribe', {'subscribe': True},
+                      extra_environ={'username': str(user.username)}).follow()
+        # user is subscribed
+        assert M.Mailbox.subscribed(user_id=user._id)
+        r = self.app.get('/p/test/wiki/Home/', extra_environ={'username': str(user.username)})
+        sidebar_menu = r.html.find('div', attrs={'id': 'sidebar'})
+        assert 'Unsubscribe' in str(sidebar_menu)
+        # unsubscribe
+        self.app.post('/p/test/wiki/subscribe', {'unsubscribe': True},
+                      extra_environ={'username': str(user.username)}).follow()
+        # user is not subscribed
+        assert not M.Mailbox.subscribed(user_id=user._id)
+        r = self.app.get('/p/test/wiki/Home/', extra_environ={'username': str(user.username)})
+        sidebar_menu = r.html.find('div', attrs={'id': 'sidebar'})
+        assert 'Subscribe to wiki' in str(sidebar_menu)
+
+    def test_rate_limit_new_page(self):
+        # Set rate limit to unlimit
+        with h.push_config(config, **{'forgewiki.rate_limits': '{}'}):
+            r = self.app.get('/p/test/wiki/new-page-title/')
+            assert_equal(r.status_int, 302)
+            assert_equal(
+                r.location,
+                'http://localhost/p/test/wiki/new-page-title/edit')
+            assert_equal(self.webflash(r), '')
+        # Set rate limit to 1 in first hour of project
+        with h.push_config(config, **{'forgewiki.rate_limits': '{"3600": 1}'}):
+            r = self.app.get('/p/test/wiki/new-page-title/')
+            assert_equal(r.status_int, 302)
+            assert_equal(r.location, 'http://localhost/p/test/wiki/')
+            wf = json.loads(self.webflash(r))
+            assert_equal(wf['status'], 'error')
+            assert_equal(
+                wf['message'],
+                'Page create/edit rate limit exceeded. Please try again later.')
+
+    def test_rate_limit_update(self):
+        # Set rate limit to unlimit
+        with h.push_config(config, **{'forgewiki.rate_limits': '{}'}):
+            r = self.app.post(
+                '/p/test/wiki/page1/update',
+                dict(text='Some text', title='page1')).follow()
+            assert_in('Some text', r)
+            p = model.Page.query.get(title='page1')
+            assert_not_equal(p, None)
+        # Set rate limit to 1 in first hour of project
+        with h.push_config(config, **{'forgewiki.rate_limits': '{"3600": 1}'}):
+            r = self.app.post(
+                '/p/test/wiki/page2/update',
+                dict(text='Some text', title='page2'))
+            assert_equal(r.status_int, 302)
+            assert_equal(r.location, 'http://localhost/p/test/wiki/')
+            wf = json.loads(self.webflash(r))
+            assert_equal(wf['status'], 'error')
+            assert_equal(
+                wf['message'],
+                'Page create/edit rate limit exceeded. Please try again later.')
+            p = model.Page.query.get(title='page2')
+            assert_equal(p, None)
+
+    def test_rate_limit_by_user(self):
+        # also test that multiple edits to a page counts as one page towards the limit
+
+        # test/wiki/Home and test/sub1/wiki already were created by this user
+        # and proactively get the user-project wiki created (otherwise it'll be created during the subsequent edits)
+        self.app.get('/u/test-admin/wiki/')
+        with h.push_config(config, **{'forgewiki.rate_limits_per_user': '{"3600": 5}'}):
+            r = self.app.post('/p/test/wiki/page123/update',  # page 4 (remember, 3 other projects' wiki pages)
+                              dict(text='Starting a new page, ok', title='page123'))
+            assert_equal(self.webflash(r), '')
+            r = self.app.post('/p/test/wiki/page123/update',
+                              dict(text='Editing some', title='page123'))
+            assert_equal(self.webflash(r), '')
+            r = self.app.post('/p/test/wiki/page123/update',
+                              dict(text='Still editing', title='page123'))
+            assert_equal(self.webflash(r), '')
+            r = self.app.post('/p/test/wiki/pageABC/update',  # page 5
+                              dict(text='Another new page', title='pageABC'))
+            assert_equal(self.webflash(r), '')
+            r = self.app.post('/p/test/wiki/pageZZZZZ/update',  # page 6
+                              dict(text='This new page hits the limit', title='pageZZZZZ'))
+            wf = json.loads(self.webflash(r))
+            assert_equal(wf['status'], 'error')
+            assert_equal(wf['message'], 'Page create/edit rate limit exceeded. Please try again later.')
+
+    def test_sidebar_admin_menu(self):
+        r = self.app.get('/p/test/wiki/Home/')
+        menu = r.html.find('div', {'id': 'sidebar-admin-menu'})
+        assert_equal(menu.attrMap['class'], 'hidden')  # (not expanded)
+        menu = [li.find('span').getText() for li in menu.findAll('li')]
+        assert_equal(
+            menu,
+            ['Set Home', 'Permissions', 'Options', 'Rename', 'Delete'])
+
+    def test_sidebar_admin_menu_is_expanded(self):
+        r = self.app.get('/p/test/admin/wiki/permissions')
+        menu = r.html.find('div', {'id': 'sidebar-admin-menu'})
+        assert_not_in('hidden', menu.attrMap.get('class', ''))  # expanded
+
+    def test_sidebar_admin_menu_invisible_to_not_admin(self):
+        def assert_invisible_for(username):
+            env = {'username': username}
+            r = self.app.get('/p/test/wiki/Home/', extra_environ=env)
+            menu = r.html.find('div', {'id': 'sidebar-admin-menu'})
+            assert_equal(menu, None)
+        assert_invisible_for('*anonymous')
+        assert_invisible_for('test-user')

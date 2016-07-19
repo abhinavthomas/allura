@@ -1,0 +1,76 @@
+#       Licensed to the Apache Software Foundation (ASF) under one
+#       or more contributor license agreements.  See the NOTICE file
+#       distributed with this work for additional information
+#       regarding copyright ownership.  The ASF licenses this file
+#       to you under the Apache License, Version 2.0 (the
+#       "License"); you may not use this file except in compliance
+#       with the License.  You may obtain a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#       Unless required by applicable law or agreed to in writing,
+#       software distributed under the License is distributed on an
+#       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+#       KIND, either express or implied.  See the License for the
+#       specific language governing permissions and limitations
+#       under the License.
+
+web:
+  build: .
+  environment: &env
+    # PATH=/allura-data/virtualenv/bin:$PATH doesn't work; see https://github.com/docker/compose/issues/650
+    - PATH=/allura-data/virtualenv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+  ports:
+    - "8080:8080"
+  volumes:
+    - .:/allura  # Allura source code from local host
+    - /allura-data:/allura-data  # for virtualenv, scm repos, etc
+  links:
+    - mongo
+    - solr
+
+taskd:
+  image: allura_web
+  working_dir: /allura/Allura
+  environment: *env
+  command: paster taskd docker-dev.ini
+  volumes_from:
+    - web
+  links:
+    - mongo
+    - solr
+    - outmail
+
+solr:
+  image: solr:5.3.1
+  ports:
+    - "8983:8983"
+  volumes:
+    - ./solr_config/allura:/opt/solr/server/solr/allura
+    - /allura-data/solr:/opt/solr/server/solr/allura/data
+
+mongo:
+  image: mongo:3.2
+  ports:
+    - "27017:27017"
+  volumes:
+    - /allura-data/mongo:/data/db
+  command: mongod --storageEngine wiredTiger
+
+outmail:
+  image: allura_web
+  command: python -u -m smtpd -n -c DebuggingServer 0.0.0.0:8826
+  expose:
+    - "8826"
+
+inmail:
+  image: allura_web
+  working_dir: /allura/Allura
+  environment: *env
+  command: paster smtp_server docker-dev.ini
+  volumes_from:
+    - web
+  ports:
+    - "8825:8825"
+  links:
+    - mongo

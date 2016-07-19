@@ -1,0 +1,124 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+<!DOCTYPE html>
+{% import 'allura:templates/jinja_master/lib.html' as lib with context %}
+{% set full_url = h.absurl(c.project.url()) %}
+
+<h1> Installing {{ tool.tool_label }} </h1>
+{% if tool_name == 'subproject' %}
+    {% set mount_point_re = h.re_mount_points['re_project_name'] %}
+    {% set max_length = 15 %}
+{% else %}
+    {% set mount_point_re = h.re_mount_points['re_relaxed_tool_mount_point']
+    if g.entry_points['tool'][tool_name].relaxed_mount_points
+    else h.re_mount_points['re_tool_mount_point'] %}
+    {% set max_length = 62 %}
+{% endif %}
+
+<form method="post" action="{{ full_url }}admin/update_mounts" id="install_form">
+    <input type="hidden" name="new.ep_name" class="new_ep_name" value="{{ tool_name }}">
+    <label class="grid-13" for="new.mount_label">Label</label>
+    <div class="grid-13"><input type="text" name="new.mount_label" class="new_mount_label"
+                                title="This will be the name displayed in your project toolbar."
+                                value="{{ tool.default_mount_label }}" maxlength="100">
+    </div>
+    <label class="grid-13" for="new.mount_point">Url Path</label>
+    <div class="grid-13">
+        <input id="id_url_input" type="text" name="new.mount_point"
+               title="The url for this tool relative to {{ full_url }} " class="new_mount_point validate_input"
+               value="{{ tool.default_mount_point }}" data-regex="{{ mount_point_re }}" maxlength="{{ max_length}}">
+        <span id="url_error_message" class="modal-form-error"></span>
+        <p><span id="full-url-preview">
+            {{ full_url }} <strong style="color:orange">
+            <span id="input-safe-preview"></span> </strong>
+        </span></p>
+    </div>
+    <div id="install_options">
+        {% for o in options %}
+            <label class="grid-13" for="{{ o.name }}">{{ o.label }}</label>
+            <div class="grid-13">
+                {% if o.ming_type.__name__ == 'bool' %}
+                    <input {{ o.render_attrs() }} id="{{ o.name }}" name="{{ o.name }}"
+                           type="checkbox"{{ ' checked="checked"' if o.default }}>
+                {% else %}
+                    <input {{ o.render_attrs() }} id="{{ o.name }}" name="{{ o.name }}" value="{{ o.default or '' }}">
+                {% endif %}
+            </div>
+            {% if o.help_text %}
+                <div class="grid-13">
+                    <small>{{ o.help_text }}</small>
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+    <div class="grid-13">&nbsp;</div>
+    <hr>
+    <div class="grid-13">&nbsp;</div>
+    <div class="grid-13">
+        <input type="submit" id="id-submit-install" value="Save" name="new.install">
+        <a href="#" class="close btn link">Cancel</a>
+    </div>
+    {{ lib.csrf_token() }}
+</form>
+
+
+<script>
+    var _existingMountPoints = {{ h.escape_json(existing_mount_points)|safe }};
+
+    $('#admin_modal_title').hide();
+    var mount_point = $('#id_url_input');
+    var _re = mount_point.data('regex');
+    var url_error = $("#url_error_message");
+    var submit_button = $("#id-submit-install");
+    var url_preview = $('#input-safe-preview');
+
+    // Update the url path preview as they type.
+    mount_point.keyup(function () {
+        url_preview.text($(this).val());
+        validateNewToolForm();
+    }).keyup();
+
+    function validateNewToolForm() {
+        var mp = document.getElementById('id_url_input');
+        var v = $(mp).val();
+        var mp_exists = _.contains(_existingMountPoints, $(mp).val());
+
+        if (!v.match(_re)) {
+            submit_button.attr('disabled', true);
+            $(url_error).text("You have entered an invalid character");
+            mp.setCustomValidity("Invalid character");
+        }
+        else if (v.length < 3) {
+            submit_button.attr('disabled', true);
+            $(url_error).text("Must be at least 3 characters");
+            mp.setCustomValidity("Must be 3 or more letters");
+        }
+        else if (mp_exists) {
+            submit_button.attr('disabled', true);
+            $(url_error).text("A tool with that path already exists");
+            mp.setCustomValidity('Mount point already exists');
+            url_error.className = "modal-form-error";
+        } else {
+            // Everything looks good -- clear any validation errors.
+            $(url_error).text("");
+            submit_button.attr('disabled', false);
+            mp.setCustomValidity("");
+        }
+    }
+</script>

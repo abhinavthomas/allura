@@ -1,0 +1,125 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% extends g.theme.master %}
+
+{% if hasattr(c.app, 'repo') %}
+    {% set repo = c.app.repo %}
+{% else %}
+    {% set repo = None %}
+{% endif %}
+
+{% if repo and repo.status != 'ready' %}
+    {% set hide_left_bar = True %}
+{% endif %}
+
+{% block extra_css %}
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="{{c.app.url}}feed.rss"/>
+    <link rel="alternate" type="application/atom+xml" title="Atom" href="{{c.app.url}}feed.atom"/>
+{% endblock %}
+
+{% block extra_js %}
+<script type="text/javascript">(function() {
+  $('#access_urls .btn').click(function(evt){
+    evt.preventDefault();
+    var parent = $(this).parents('.btn-bar');
+    $(parent).find('input').val($(this).attr('data-url'));
+    $(parent).find('span').text($(this).attr('title')+' access');
+    $(this).parent().children('.btn').removeClass('active');
+    $(this).addClass('active');
+  });
+  $('#access_urls .btn').first().click();
+
+  {% if repo %}
+  var repo_status = document.getElementById('repo_status');
+  // The repo_status div will only be present if repo.status != 'ready'
+  if (repo_status) {
+    $('.spinner').show()
+    var delay = 500;
+    function check_status() {
+        $.get('{{repo.url()}}status', function(data) {
+            if (data.status === 'ready') {
+                $('.spinner').hide()
+                $('#repo_status h2').html('Repo status: ready. <a href=".">Click here to refresh this page.</a>');
+            }
+            else {
+                $('#repo_status h2 span').html(data.status);
+                if (delay < 60000){
+                    delay = delay * 2;
+                }
+                window.setTimeout(check_status, delay);
+            }
+        });
+    }
+    var status_checker = window.setTimeout(check_status, delay);
+    {% endif %}
+  }
+}());
+</script>
+{% endblock %}
+
+{% block before_content %}
+  {% if repo and repo.status != 'ready' %}
+    <div id="repo_status">
+        <img src="{{g.forge_static('images/spinner.gif')}}" class="spinner" style="display:none"/>
+        <h2>Repo status: <span>{{repo.status}}</span>...</h2>
+    </div>
+  {% endif %}
+{% endblock %}
+
+{% macro clone_info(repo) %}
+  {% if repo %}
+    <div id="access_urls" class="btn-bar grid-19">
+      <div class="btn-set{% if not h.has_access(c.app, 'write')() %} duo{% endif %}">
+        {% if h.has_access(c.app, 'write')() %}
+        <a class="btn" data-url="{{repo.clone_command('rw')}}" title="Read/Write">
+          RW
+        </a>
+        <a href="#" class="btn" data-url="{{repo.clone_command('ro')}}" title="Read Only">
+          RO
+        </a>
+        <a href="#" class="btn" data-url="{{repo.clone_command('https')}}" title="HTTP">
+          HTTP
+        </a>
+        {% else %}
+        <a href="#" class="btn" data-url="{{repo.clone_command('ro')}}" title="Read Only">
+          RO
+        </a>
+        <a href="#" class="btn" data-url="{{repo.clone_command('https_anon')}}" title="HTTP">
+          HTTP
+        </a>
+        {% endif %}
+      </div>
+      <span></span>
+      <input id="access_url" readonly type="text"
+             class="selectText"
+             value=""/>
+    </div>
+    <hr>
+  {% endif %}
+{% endmacro %}
+
+{% macro commit_labels(commit) %}
+  {% set branches, tags = commit.symbolic_ids %}
+  {% for b in branches %}
+    <span class="scm-branch-label">{{b}}</span>
+  {% endfor %}
+  {% for t in tags %}
+    <span class="scm-tag-label">{{t}}</span>
+  {% endfor %}
+{% endmacro %}

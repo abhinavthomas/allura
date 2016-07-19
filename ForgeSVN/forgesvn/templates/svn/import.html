@@ -1,0 +1,43 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% extends 'allura:templates/repo/repo_master.html' %}
+
+{% block title %}
+  {% if c.app.repo %}
+    SVN Repository: {{c.app.repo.name}}
+  {% else %}
+    SVN Repository
+  {% endif %}
+{% endblock %}
+
+{% block header %}{{c.app.config.options.mount_label}}{% endblock %}
+
+{% block content %}
+{% if c.is_empty %}
+    <p>We expect a URL to a publicly accessible repository (no password).<br />
+    (Examples: http://repository.url/svn/name, https://repository.url/svn/name or svn://repository.url/svn/name)</p>
+    <p>Notification email will be sent when import complete.</p>
+    <p>Enter the URL of the source repository below:</p>
+    {{ c.form.display(action='do_import') }}
+{% else %}
+  <p>You cannot import into a repository that already has commits in it.
+     Please delete this SVN tool if you really want to delete this whole repository.
+     Then install a new SVN tool and you will be able to import into it.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,82 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% extends 'allura:templates/repo/repo_master.html' %}
+{% do g.register_forge_css('css/forge/hilite.css') %}
+
+{% block title %}
+  {{c.project.name}} / {{c.app.config.options.mount_label}}
+    / {{commit.shorthand_id()}} {{path}}
+{% endblock %}
+
+{% block header %}
+Tree <a href="{{commit.url()}}">{{commit.shorthand_id()}}</a> {{commit_labels(commit)}} /
+{{lib.path_links(path.split('/')[1:])}}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+form.tarball {
+  display: inline;
+  margin: 0;
+  padding: 0;
+}
+form.tarball button {
+    background: none;
+    border: 0;
+    box-shadow: none;
+    text-shadow: none;
+    color:  #fff;
+    font-weight: normal;;
+    padding: 0;
+    margin-bottom: 0;
+    font-size: 12px;
+    line-height: 36px;
+}
+form.tarball button:hover {
+  border: 0 !important;
+}
+</style>
+{% endblock %}
+
+{% block actions %}
+{% if tarball_url %}
+<form class="tarball" action="{{ tarball_url }}" method="post">
+  <input type="hidden" name="path" value="{{ path or '' }}" />
+  <button>{{ g.icons['download'].render(tag='span', title='Download Snapshot', show_title=True) }}</button>
+  {{lib.csrf_token()}}
+</form>
+{% endif %}
+
+{{ g.icons['history'].render(href='%slog/?path=%s' % (commit.url(), path), show_title=True) }}
+{% if c.user and c.user != c.user.anonymous() %}
+  {{c.subscribe_form.display(value=tool_subscribed, tool_subscribed=tool_subscribed, action='subscribe', style='icon')}}
+{% endif %}
+{{ g.icons['feed'].render(href='{}feed/'.format(c.app.url)) }}
+{% endblock %}
+
+{% block content %}
+  {{ clone_info(c.app.repo) }}
+  <br style="clear:both"/>
+{{c.tree_widget.display(repo=repo, commit=commit, tree=tree, path=path)}}
+{% set name, text = tree.readme() %}
+{% if name %}
+  <h1 id="readme">Read Me</h1>
+  {{h.render_any_markup(name, text)}}
+{% endif %}
+{% endblock %}

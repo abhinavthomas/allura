@@ -1,0 +1,138 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% extends g.theme.master %}
+
+{% do g.register_forge_css('css/forge/deck.css') %}
+
+{% block title %}{{c.project.name}} / {{app.config.options.mount_label}} / Permissions{% endblock %}
+
+{% block header %}{{app.config.options.mount_point}} Permissions{% endblock %}
+
+{% block extra_css %}
+<style>
+  ul.deck {
+    cursor: auto;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+  {% if not (app.permissions and allow_config) %}
+    You are not allowed to edit permissions for {{app.config.options.mount_point}}.
+  {% else %}
+    <form method="POST" action="update">
+      {% for row in permissions|dictsort|batch(4) %}
+      {% set i0=loop.index0  %}
+      <div class="fourcol">
+        {% for name, ids in row %}
+        {% set i1 = i0*4 + loop.index0 %}
+        {{c.card.display(
+            index=i1,
+            id=name,
+            name=name,
+            desc=app.describe_permission(name),
+            items=h.make_roles(ids),
+            block_list = block_list
+        )}}
+        {% endfor %}
+        <br style="clear:both"/>
+      </div>
+      {% endfor %}
+      <hr/>
+      <p class="clearfix">
+        <input type="submit" value="Save">
+        <a href="{{c.app.url}}" class="btn link cancel">Cancel</a>
+      </p>
+      {{lib.csrf_token()}}
+    </form>
+    {{c.block_user.display()}}
+    {{c.block_list.display()}}
+  {%endif%}
+{% endblock %}
+{% block extra_js %}
+<script type="text/javascript">
+  var current_block_list;
+  $('a.block-user').click(function(){
+      current_block_list = $(this).parent().parent().find('div.block-list')
+      var deck =  $(this).closest('ul.deck');
+      var role = deck.find('li.tcenter h3').text();
+      $('input.block_user_role').val(role);
+  });
+  $('a.block-list').click(function(){
+      current_block_list = $(this).siblings('div.block-list')
+      var userlist = $(this).siblings('div.block-list').clone();
+      var deck =  $(this).closest('ul.deck');
+      var role = deck.find('li.tcenter h3').text();
+      $('input.block_user_role').val(role);
+      $('div.model-block-list').html(userlist.html());
+  });
+
+
+  $('form[action="block_user"], form[action="unblock_user"]').submit(function() {
+    var form = $(this);
+
+    function display_error(data) {
+      if (data.error) {
+        flash(data.error, 'error');
+        return true;
+      }
+      return false;
+    }
+    function after() {
+      form.parent().slideUp('fast');
+      $('.lb_overlay').hide();
+    }
+    function on_block_user_success(data) {
+      if (display_error(data)) { return; }
+
+      current_block_list.find('ul').append(
+        '<li><label><input type="checkbox" value="' + data.user_id + '"name="user_id">'
+        + data.username + (data.reason ? ' (' + data.reason + ')' : '') + '</label></li>'
+      );
+      // show 'Block List' button
+      current_block_list.parent('li').show();
+      form.find('input[type="text"], textarea').val('');
+      after();
+    }
+    function on_unblock_user_success(data) {
+      if (display_error(data)) { return; }
+
+      for (var i in data.unblocked) {
+        var uid = data.unblocked[i];
+        current_block_list.find(':checkbox[name="user_id"][value="' + uid + '"]').parent().parent().remove();
+      }
+      if (current_block_list.find(':checkbox[name="user_id"]').length == 0) {
+        // hide 'Block List' button
+        current_block_list.parent('li').hide();
+      }
+      after();
+    }
+
+    var callback = form.attr('action') == 'block_user' ? on_block_user_success : on_unblock_user_success;
+
+    $.ajax({
+      data: form.serialize(),
+      type: form.attr('method'),
+      url:  form.attr('action'),
+      success: callback
+    });
+    return false;
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,119 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% extends g.theme.master %}
+{% import 'allura:templates/jinja_master/lib.html' as lib with context %}
+
+{% block title %}{{c.project.name}} / {{app.config.options.mount_label}} / Admin Forums{% endblock %}
+
+{% block header %}{{app.config.options.mount_label}} Admin Forums{% endblock %}
+
+{% block content %}
+<form method="POST" action="update_forums" enctype="multipart/form-data" id="edit-forums">
+  <table id="forums">
+    <thead>
+      <tr>
+        <th>Forum</th><th>Topics</th><th>Posts</th><th>Last Post</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for forum in app.forums if not forum.deleted %}
+      <tr class="{{loop.index0%2 and ' even' or ''}}">
+        <td>
+          <div class="editable viewing">
+            <span class="viewer"><a href="{{forum.url()}}">{{h.really_unicode(forum.name)}}</a></span>
+            <span class="editor">
+              {{lib.text_field('forum-%s.name' % loop.index0, 'Forum Title', h.really_unicode(forum.name))}}
+            </span>
+          </div>
+          <div class="editable viewing">
+            <span class="viewer">{{h.really_unicode(forum.shortname)}}</span>
+            <span class="editor">
+              {{lib.text_field('forum-%s.shortname' % loop.index0, 'Forum Short Name', h.really_unicode(forum.shortname))}}
+            </span>
+          </div>
+          <div class="editable viewing">
+            <span class="viewer">{% if forum.monitoring_email %}{{h.really_unicode(forum.monitoring_email)}}{% else %}No monitoring email set.{% endif %}</span>
+            <span class="editor">
+              {{lib.text_field('forum-%s.monitoring_email' % loop.index0, 'Monitoring Email', h.really_unicode(forum.monitoring_email))}}
+            </span>
+          </div>
+          <div class="editable viewing">
+            <div class="viewer">{% if forum.members_only %}Only viewable by members{% else %}Viewable by anyone{% endif %}</div>
+            <span class="editor multiline">
+              <label for="{{'forum-%s.members_only' % loop.index0}}">Developer Only</label>
+              <input type="checkbox" id="{{'forum-%s.members_only' % loop.index0}}" name="{{'forum-%s.members_only' % loop.index0}}"{% if forum.members_only %} checked{% endif %}>
+            </span>
+          </div>
+          <div class="editable viewing">
+            <div class="viewer">{% if forum.anon_posts %}Anonymous posting allowed{% else %}Anonymous posting not allowed{% endif %}</div>
+            <span class="editor multiline">
+              <label for="{{'forum-%s.anon_posts' % loop.index0}}">Allow Anonymous Posts</label>
+              <input type="checkbox" id="{{'forum-%s.anon_posts' % loop.index0}}" name="{{'forum-%s.anon_posts' % loop.index0}}"{% if forum.anon_posts %} checked{% endif %}>
+            </span>
+          </div>
+          <div class="editable viewing">
+            <div class="viewer">{{g.markdown.cached_convert(forum, 'description')|safe}}</div>
+            <span class="editor multiline">
+              {{lib.text_area('forum-%s.description' % loop.index0, 'Description', h.really_unicode(forum.description))}}
+            </span>
+          </div>
+          {% if forum.subforums %}
+            <b>Subforums:</b>
+            {% for sf in forum.subforums %}
+              <span>
+                {% if loop.index1 != 0 %}, {% endif %}
+                <a href="{{sf.url()}}">{{sf.name}}</a>
+              </span>
+            {% endfor %}
+          {% endif %}
+        </td>
+        <td>{{forum.num_topics}}</td>
+        <td>{{forum.num_posts}}</td>
+        <td>{{lib.post_summary(forum.last_post)}}</td>
+        <td>
+          <input name="{{'forum-%s.id' % loop.index0}}" type="hidden" value="{{forum._id}}"/>
+          <input type="submit" name="{{'forum-%s.delete' % loop.index0}}" value="Delete" onclick="return confirm('Really delete this forum?');" /><br/>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="grid-19"><input type="button" id="add_forum" value="Add another forum"></div>
+  {{lib.csrf_token()}}
+</form>
+{{c.add_forum.display(method='POST',action='add_forum',app=app, value=c.add_forum)}}
+{% endblock %}
+
+{% block extra_js %}
+  <script type="text/javascript">
+    $(function() {
+      $("#add_forum").click(function(){
+        $("#add_forum_form").show();
+        $(this).hide();
+        return false;
+      });
+      $("#add_forum_cancel").click(function(){
+        $("#add_forum_form").hide();
+        $("#add_forum").show();
+        return false;
+      });
+    });
+  </script>
+{% endblock %}

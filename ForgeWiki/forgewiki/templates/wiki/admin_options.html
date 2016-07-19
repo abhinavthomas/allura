@@ -1,0 +1,62 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+<!DOCTYPE html>
+<form action="{{c.project.url()}}admin/{{app.config.options.mount_point}}/set_options" method="post">
+    <label class="grid-4">Show discussion:</label>
+    <div class="grid-9">
+      {% if allow_config %}
+        <input type="checkbox" name="show_discussion" id="show_discussion"{% if app.show_discussion %} checked="checked"{% endif %}/>
+      {% else %}
+        <span>{{app.show_discussion}}</span>
+      {% endif %}
+    </div>
+    <label class="grid-4">Show left bar:</label>
+    <div class="grid-9">
+      {% if allow_config %}
+        <input type="checkbox" name="show_left_bar" id="show_left_bar"{% if app.show_left_bar %} checked="checked"{% endif %}/>
+      {% else %}
+        <span>{{app.show_left_bar}}</span>
+      {% endif %}
+    </div>
+    <label class="grid-4">Show metadata:</label>
+    <div class="grid-9">
+      {% if allow_config %}
+        <input type="checkbox" name="show_right_bar" id="show_right_bar"{% if app.show_right_bar %} checked="checked"{% endif %}/>
+      {% else %}
+        <span>{{app.show_right_bar}}</span>
+      {% endif %}
+    </div>
+    <label class="grid-4">Allow posting replies via email:</label>
+    <div class="grid-9">
+      {% if allow_config %}
+        <input type="checkbox" name="allow_email_posting" id="allow_email_posting"{% if app.allow_email_posting %} checked="checked"{% endif %}/>
+      {% else %}
+        <span>{{app.allow_email_posting}}</span>
+      {% endif %}
+    </div>
+    <div class="grid-13">&nbsp;</div>
+    <hr>
+    <div class="grid-13">&nbsp;</div>
+    <div class="grid-13">
+      {% if allow_config %}
+	<input type="submit" value="Save"/>
+        <a href="#" class="close">Cancel</a>
+      {% endif %}
+    </div>
+</form>

@@ -1,0 +1,53 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+<form>
+  <label class="grid-13">Extensions:</label>
+  <div class="grid-13">
+    {% if allow_config %}
+      <input type="text" name="additional_viewable_extensions"
+             id="additional_viewable_extensions" title="e.g., .svnignore,.gitignore,.ini"
+             {% if additional_viewable_extensions %} value="{{additional_viewable_extensions}}"{% endif %}/>
+    {% else %}
+      <span>{{additional_viewable_extensions}}</span>
+    {% endif %}
+  </div>
+
+  {% if allow_config %}
+  <div class="grid-13">&nbsp;</div>
+  <hr>
+  <div class="grid-13">&nbsp;</div>
+  <div class="grid-13">
+    <input type="button" onclick="save_extensions()" value="Save">
+  </div>
+  {% endif %}
+</form>
+{% if allow_config %}
+  <script type="text/javascript">
+    function save_extensions() {
+        var cval = $.cookie('_session_id');
+        $.post('{{c.project.url()}}admin/{{app.config.options.mount_point}}/set_extensions', {
+            additional_viewable_extensions: $('#additional_viewable_extensions').val(),
+            _session_id:cval
+        },
+        function () {
+            location.reload();
+        });
+    }
+  </script>
+{% endif %}

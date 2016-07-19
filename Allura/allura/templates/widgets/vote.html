@@ -1,0 +1,53 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% import 'allura:templates/jinja_master/lib.html' as lib with context %}
+{% set can_vote = c.user and c.user != c.user.anonymous()
+                  and h.has_access(artifact, 'post')() %}
+{% set voted = artifact.user_voted(c.user) %}
+
+{% if can_vote %}
+<div id="vote" class="gray">
+  <span class="btn-set duo">
+  <a href="" class="btn {% if voted == 1 %}active{% endif %} {% if can_vote %}js-vote-up{% endif %}" onclick="javascript:return false;">
+    {{ g.icons['vote_up'].render(tag='b', style="color:green;") }}
+  </a>
+  <a href="" class="btn {% if voted == -1 %}active{% endif %} {% if can_vote %}js-vote-down{% endif %}" onclick="javascript:return false;">
+    {{ g.icons['vote_down'].render(tag='b', style="color:red;") }}
+  </a>
+  </span>
+  <div class="grid-8 vote-text">
+    <span class="votes-up">{{ artifact.votes_up }}</span> up votes |
+    <span class="votes-down">{{ artifact.votes_down }}</span> down votes |
+    <span class="votes-percent">{{ artifact.votes_up_percent }}</span>%
+  </div>
+  <div class="fright vote-text">
+      {% trans num_comments = artifact.discussion_thread.num_replies %}
+        {{ num_comments }} comment
+        {% pluralize %}{{ num_comments}} comments
+      {% endtrans %}
+  </div>
+  <div style="clear:both;"></div>
+  {% if can_vote %}
+  <form action="{{ action }}" method="POST">
+    {# csrf protection will be automatically inserted here (_session_id field) #}
+    {{lib.csrf_token()}}
+  </form>
+  {% endif %}
+</div>
+{% endif %}

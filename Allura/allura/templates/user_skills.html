@@ -1,0 +1,108 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% set hide_left_bar = True %}
+{% extends "allura:templates/user_account_base.html" %}
+
+{% block title %}{{c.user.username}} / Skills{% endblock %}
+
+{% block header %}Skills manager for {{c.user.username}} {% endblock %}
+
+{% block content %}
+  {{ super() }}
+  <div class="grid-20">
+    {% if c.user.get_skills()|length > 0 %}
+      <h2>Your current skills list:</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Skill</th>
+            <th>Level</th>
+            <th>Comments</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in c.user.get_skills() %}
+              {{g.theme.remove_user_skill.display(skill=s)}}
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <h2>At the moment, your skills list is empty!</h2>
+      <div class="grid-20">
+        You can set your skills so that other users will be able to know what you can do best. 
+        To do it, you just need to choose the options that best fit your skills in the section below. You 
+        can also specify your skill level and some additional free comments.
+      </div>
+    {% endif %}
+  </div>
+ 
+  <div class="grid-20">
+    <h2>Add a new skill</h2>
+
+    {% if selected_skill %}
+      <div class="grid-20" style="margin:0;">
+        <div class="grid-4">
+          You selected:
+        </div>
+        <div class="grid-12" style="margin-bottom:20px">      
+           <a href=".">List of all skills</a>
+           {% for cat in parents %}
+             &gt; <a href="{{cat.trove_cat_id}}">{{cat.fullname}}</a>
+           {% endfor %}
+           &gt; <b>{{selected_skill.fullname}}</b>
+           <input type="hidden" name="upper_category" value="{{selected_skill.trove_parent_id}}"/>
+        </div>
+      </div>
+    {% endif %}
+ 
+    {% if skills_list %}
+      {% if selected_skill %}
+        <h3>Select a subcategory of "{{selected_skill.fullname}}"</h3>
+      {% else %}
+        <h3>Select a category</h3>
+      {%endif%}
+      {{g.theme.select_subcategory_form.display(categories=skills_list)}}
+    {% endif %}
+    {% if selected_skill %}
+      <h3>Add "{{selected_skill.fullname}}" to you set of skills</h3>
+      {{g.theme.add_user_skill.display(selected_skill=selected_skill.trove_cat_id, 
+           action="{}/save_skill".format(selected_skill.trove_cat_id)) }}
+    {% endif %}
+
+    <h3>Other possible actions</h3>
+    <div class="grid-20" style="margin-bottom:10px;"/>
+      <ul>
+        {% if tg.config.get('trovecategories.enableediting', 'false') == 'true' %}
+          {% if selected_skill %}
+            <li>
+              <a href="/categories/{{selected_skill.trove_cat_id}}">
+                Create a new category in this list
+              </a>
+              if you want to add a more specific kind of skill which is not included here.
+            </li>
+          {% endif %}
+        {%endif%}
+        <li>
+          <a href="/auth/prefs">Go to your profile</a> to set the remaining personal preferences.
+        </li>
+      </ul>
+    </div>
+  </div>
+{% endblock %}

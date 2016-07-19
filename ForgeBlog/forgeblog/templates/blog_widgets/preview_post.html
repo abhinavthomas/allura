@@ -1,0 +1,43 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% import 'allura:templates/jinja_master/lib.html' as lib with context %}
+<div style="margin-bottom: 10px">
+  <h3>
+    <a href="{{value.url()}}">{{value.title}}</a>
+  </h3>
+  {{value.html_text_preview|safe}}
+  <em class="grid-19">
+    Posted by {{lib.user_link(value.author(), avatar=True)}} {{lib.abbr_date(value.timestamp)}}
+    {% if value.state != 'published' %}
+      <span>| {{value.state.capitalize()}}</span>
+    {% endif %}
+    {% if h.has_access(value, 'write')() %}
+      <span>| <a href="{{value.url()}}edit">Edit</a></span>
+    {% endif %}
+  </em>
+  {% if value.labels: %}
+  <em class="grid-19">
+    <strong>Labels:</strong>
+    {% for l in value.labels %}
+      <span><a href="{{c.app.url}}search?q=labels_t:%22{{l}}%22&parser=standard">{{l}}</a> </span>
+    {% endfor %}
+  </em>
+  {% endif %}
+  <div style="clear: both"></div>
+</div>

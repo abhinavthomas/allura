@@ -1,0 +1,92 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% set page = "site_notifications" %}
+{% set hide_left_bar = True %}
+
+{% extends 'allura:templates/site_admin.html' %}
+{% block content %}
+  <div class="grid-23"><a href="/nf/admin">Back to Site Admin Home</a></div>
+  <div class="grid-23"><a href="new">Create a new notification</a></div>
+  {{c.page_size.display(limit=limit, page=page_url, count=count)}}
+  <table id="site_notifications">
+    <thead>
+      <tr>
+        <th>Active</th>
+        <th>Impressions</th>
+        <th>Content</th>
+        <th>User Role</th>
+        <th>Page Regex</th>
+        <th>Page Type</th>
+        <th></th>
+      </tr>
+    </thead>
+    {% for note in notifications %}
+    <tr>
+      <td><small>{{ note.active }}</small></td>
+      <td><small>{{ note.impressions}}</small></td>
+      <td><small class="tooltip" title="{{ note.content }}">{{ note.content|truncate(50) }}</small></td>
+      <td><small>{{ note.user_role if note.user_role}}</small></td>
+      <td><small class="tooltip" title="{{ note.page_regex }}">{{ note.page_regex|truncate(20) if note.page_regex}}</small></td>
+      <td><small>{{ note.page_tool_type if note.page_tool_type}}</small></td>
+      <td>
+        <a href="{{ note._id }}/edit">Edit</a><br>
+        <a href="{{ note._id }}/delete" class="sn_delete">Delete</a>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+    <div class="grid-23">
+    {{c.page_list.display(limit=limit, page=page_url, count=count)}}
+  </div>
+{% endblock %}
+
+{% block extra_css %}
+<style type="text/css">
+    .pad table {
+      width: 915px;
+    }
+    td {
+        max-width: 200px;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+      $(document).ready(function() {
+        $(".sn_delete").on("click", function(e){
+          e.preventDefault();
+          var elem = this;
+          $.ajax({
+            type: 'POST',
+            url: elem.href,
+            data: {
+              '_session_id': $.cookie('_session_id')
+            },
+            success: function(data) {
+                $(elem).parent().parent().remove();
+            }
+          });
+        });
+      });
+    </script>
+{% endblock %}
+
+
+

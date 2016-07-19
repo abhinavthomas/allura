@@ -1,0 +1,87 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% import 'allura:templates/jinja_master/lib.html' as lib with context %}
+<form action="{{action}}" method="POST">
+
+    <div class="welcome">
+        <div class="grid-4" style="text-align: right; padding-top: 7px;">
+            <label for="{{ widget.context_for(widget.fields.project_name)['id'] }}">
+                Project Name
+            </label>
+        </div>
+        <div class="grid-10">{{widget.display_field(widget.fields.project_name)}}</div>
+        <div class="grid-9" style="position:relative; overflow:visible">
+            {{ g.icons['caution'].render(tag='b', extra_css='error_icon') }}
+            {{ g.icons['check'].render(tag='b', extra_css='success_icon') }}
+        </div>
+        <div style="clear:both">&nbsp;</div>
+        <div class="grid-4" style="text-align: right; padding-top: 7px;">
+            <label for="{{ widget.context_for(widget.fields.project_unixname)['id'] }}">
+                URL Name
+            </label>
+        </div>
+        <div class="grid-10">{{widget.display_field(widget.fields.project_unixname)}}
+            <div id="project_url">http://{{request.environ['HTTP_HOST']}}{{neighborhood.url()}}<span id="url_fragment"></span></div>
+        </div>
+        <div class="grid-9" style="position:relative; overflow:visible">
+            {{ g.icons['caution'].render(tag='b', extra_css='error_icon') }}
+            {{ g.icons['check'].render(tag='b', extra_css='success_icon') }}
+        </div>
+        {{widget.display_field(widget.fields.neighborhood)}}
+        <div style="clear:both">&nbsp;</div>
+    </div>
+
+    {% if not neighborhood.project_template %}
+    <h2 style="padding-left:20px">
+        Select the tools to use in your project.  You may add or remove tools at any time.
+    </h2>
+    {% for opt in widget.fields.tools.options %}
+        {% set tool = g.entry_points["tool"][opt.html_value] %}
+        {% set _ctx = widget.context_for(widget.fields.tools) %}
+        {% if tool.installable %}
+        <div class="tool">
+            <input type="checkbox" value="{{ opt.html_value }}"
+                   {% if _ctx['value'] and opt.html_value in _ctx['value'] %}checked{% endif %}
+                   name="{{ _ctx['rendered_name'] }}"
+                   id="{{ _ctx['rendered_name'] }}_{{ opt.html_value }}">
+            <h1><label for="{{ _ctx['rendered_name'] }}_{{ opt.html_value }}">{{ opt.label }}</label></h1>
+            <p>{{ tool.tool_description }}</p>
+        </div>
+        {% endif %}
+    {% endfor %}
+    {% endif %}
+    {% if h.has_access(neighborhood, 'admin') and not neighborhood.project_template and neighborhood.features['private_projects'] %}
+    <div style="margin-top:20px">
+        <div class="grid-16" style="padding-top:10px; padding-left:20px">
+          {{widget.display_field(widget.fields.private_project)}}
+            <label for="{{ widget.context_for(widget.fields.private_project)['id'] }}">
+            Private? Private projects will be unreadable to non-project members and will
+            not show up in search results.
+            </label>
+        </div>
+        <div style="clear:both"></div>
+    </div>
+    {% endif %}
+    <div class="button-row">
+        <input type="submit" id="start" value="Create">
+    </div>
+  {% if widget.antispam %}{% for fld in g.antispam.extra_fields() %}
+  {{fld}}{% endfor %}{% endif %}
+  {{lib.csrf_token()}}
+</form>

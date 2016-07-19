@@ -1,0 +1,47 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% extends 'forgewiki:templates/wiki/master.html' %}
+
+{% block title %}{{c.project.name}} / {{c.app.config.options.mount_label}} / Browse Labels{% endblock %}
+
+{% block header %}Browse Labels{% endblock %}
+
+{% block wiki_content %}
+{{c.page_size.display(limit=limit,count=count,page=page)}}
+<table id="forge_wiki_browse_tags">
+  <thead>
+    <tr>
+      <th>Label</th>
+      <th>Pages</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% set i = 0 %}
+    {% for label in name_labels %}
+      <tr class="{{i%2 and 'even' or ''}}">
+        <td>{{label}}</td>
+        <td>
+          {% for p in labels[label] %}<a href="{{p.url()}}">{{p.title}}</a> {% endfor %}</td>
+      </tr>
+      {% set i = i+1 %}
+    {% endfor %}
+  </tbody>
+</table>
+{{c.page_list.display(limit=limit, page=page, count=count)}}
+{% endblock %}

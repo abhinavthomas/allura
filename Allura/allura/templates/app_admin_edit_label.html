@@ -1,0 +1,39 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+<!DOCTYPE html>
+<form method="post" action="{{c.project.url()}}admin/{{app.config.options.mount_point}}/update_label">
+  {% for o in app.config_options if o.name in ['mount_label'] %}
+    <div class="grid-9">
+      {% if not allow_config %}
+           {{app.config.options.get(o.name, o.default)}}
+      {% else%}
+        <input id="{{o.name}}" name="{{o.name}}" value="{{app.config.options.get(o.name, o.default)}}">
+      {% endif %}  
+    </div>
+  {% endfor %}
+  {% if allow_config %}
+    <div class="grid-13">&nbsp;</div>
+    <hr>
+    <div class="grid-13">&nbsp;</div>
+    <div class="grid-13">
+      <input type="submit" value="Save"/>
+      <a href="#" class="close">Cancel</a>
+    </div>
+  {% endif %}
+</form>

@@ -1,0 +1,121 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% extends g.theme.master %}
+
+{% do g.register_forge_css('css/forge/deck.css') %}
+{% do g.register_forge_js('js/project_groups.js', location='body_js_tail') %}
+
+{% block title %}{{c.project.name}} / User Permissions {% endblock %}
+
+{% block header %}User Permissions{% endblock %}
+
+{% macro show_perms_for_role(role) %}
+  <ul class="permissions">
+    {% for perm in permissions_by_role[role._id.__str__()] %}
+    <li class="{{perm['has']}}" data-permission="{{perm['name']}}">
+      {{ g.icons['perm_has_%s'%perm['has']].render(title=perm['text'], closing_tag=False) }}
+        {{perm['name']}}
+      </a> {# close tag, opened by render #}
+    </li>
+    {% endfor %}
+  </ul>
+{% endmacro %}
+{% macro group_icon(icon) %}
+<p style="padding-bottom: 0">{{ g.icons[icon].render(tag='span', extra_css='x24') }}</p>
+{% endmacro %}
+
+{% block content %}
+<p>Project permissions are assigned to groups of users. Add users to a group appropriate to the role they fill in your project. <a href="#" id="show_help">more...</a></p>
+<div id="help_text" style="display:none">
+<p>By default, your project has three groups of progressively more privileged users (Member, Developer, and Admin groups). There are also catch alls for any logged in user (Authenticated) and any user even if they aren't logged in (Anonymous). Permissions allowed to a less privileged group are inherited by more privileged ones.</p>
+<p>Group permissions can be toggled on and off by clicking on them. A permission with a barred circle icon is not granted to the group. A check icon means the permission is granted to the group. A check in a circle indicates that the permission is inherited from another group. To see where the permission is inherited from, hover over the permission and a tooltip will appear. <a href="#" id="hide_help">less...</a></p>
+</div>
+<table id="usergroup_admin">
+  <thead>
+    <tr>
+      <th>Group</th>
+      <th>Users</th>
+      <th>Permissions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for role in c.project.named_roles %}
+    <tr data-group="{{role._id}}">
+      <td class="group">
+        {{role.name}}{{group_icon('group')}}
+        {% if role.name not in ['Admin', 'Developer', 'Member'] %}
+        <small><a href="delete_group?group_name={{role.name}}" class="delete_group">Remove</a></small>
+        {% endif %}
+      </td>
+      <td>
+        <ul class="users">
+          {% for r in role.parent_roles() if r.name %}
+          <li class="parent_users">All users in {{ r.name }} group</li>
+          {% endfor %}
+          {% for r in role.users_with_role() %}
+          <li class="deleter" data-user="{{r.user.username}}">
+            {{ g.icons['perm_delete'].render(
+                title='%s (%s)' % (r.user.display_name, r.user.username),
+                show_title=True,
+                extra_css='deleter',
+                **{'data-user': r.user.username}) }}
+          </li>
+          {% endfor %}
+          <li class="new-item">
+            <form class="add_user">
+              <input type="text" placeholder="type a username">
+              <input type="submit" value="Save" class="nofloat">
+              <a href="#" class="cancel_link">cancel</a>
+            </form>
+          </li>
+          <li class="adder">
+            {{ g.icons['add'].render(show_title=True) }}
+          </li>
+        </ul>
+      </td>
+      <td>{{show_perms_for_role(role)}}</td>
+    </tr>
+    {% endfor %}
+    <tr data-group="{{auth_role._id}}">
+      <td class="group">Authenticated{{group_icon('secure')}}</td>
+      <td><div class="parent_users">Any logged in user</div></td>
+      <td>{{show_perms_for_role(auth_role)}}</td>
+    </tr>
+    <tr data-group="{{anon_role._id}}">
+      <td class="group">Anonymous{{group_icon('unsecure')}}</td>
+      <td><div class="parent_users">Any user including those not logged in</div></td>
+      <td>{{show_perms_for_role(anon_role)}}</td>
+    </tr>
+    <tr>
+      <td colspan="3" class="new_group">
+        {{ g.icons['add'].render(href="new", title="Add a new Group", show_title=True, extra_css='admin_modal') }}
+      </td>
+    </tr>
+  </tbody>
+</table>
+{% endblock %}
+
+{% block extra_js %}
+<script type="text/javascript">
+  // these icons are used in the js, so set them up now
+  var spinner_img = '<img src="{{g.forge_static('images/spinner.gif')}}">';
+  {% set perm_delete_ico = g.icons['perm_delete'].render(title='', extra_css='deleter') %}
+  var perm_delete_ico = '{{perm_delete_ico}}';
+</script>
+{% endblock %}

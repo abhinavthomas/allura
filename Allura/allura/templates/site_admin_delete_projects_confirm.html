@@ -1,0 +1,53 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+
+{% extends 'allura:templates/site_admin_delete_projects.html' %}
+
+{% block content %}
+  <div class="grid-19">
+    <p class="warning">Be careful. This will delete all projects data!</p>
+    <p>You're trying to delete the following projects {% if disable_users %} and <strong>disable all projects' users</strong>{% endif %}</p>
+    <p>Because of: {{ reason or ''|nl2br }}</p>
+    <p><a href="{{ edit_link }}">Edit</a></p>
+    <table>
+      <thead>
+      <tr>
+        <th>Your input</th>
+        <th>Parsed project</th>
+      </tr>
+      </thead>
+      {% for input, p, error in parsed_projects %}
+      <tr>
+        <td>{{ input }}</td>
+        <td>
+          {% if p %}
+            <a href="{{ p.url() }}">{{ p.url() }}</a>
+          {% else %}
+            {{ error }}
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+    <p><a href="{{ edit_link }}">Edit</a></p>
+    {% set form_step = 'confirm' %}
+    {% include 'allura:templates/site_admin_delete_projects_form.html' %}
+  </div>
+{% endblock %}
+

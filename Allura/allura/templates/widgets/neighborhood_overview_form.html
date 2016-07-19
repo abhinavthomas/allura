@@ -1,0 +1,64 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% import 'allura:templates/jinja_master/lib.html' as lib with context %}
+
+  <form method="POST" action="update" enctype="multipart/form-data">
+    <label class="grid-4">Name</label>
+    <div class="grid-14">{{widget.display_field(widget.fields.name)}}</div>
+    <label class="grid-4">Redirect</label>
+    <div class="grid-14">{{widget.display_field(widget.fields.redirect)}}</div>
+  {% if neighborhood.has_home_tool %}
+    <label class="grid-4">Home Content (HTML)</label>
+    <div class="grid-14">{{widget.display_field(widget.fields.homepage)}}</div>
+    <label class="grid-4">Allow Browsing</label>
+    <div class="grid-14">{{widget.display_field(widget.fields.allow_browse)}}</div>
+  {% endif %}
+    <label class="grid-4">Show Title</label>
+    <div class="grid-14">{{widget.display_field(widget.fields.show_title)}}</div>
+  {% if neighborhood.allow_custom_css %}
+    <label class="grid-4">Custom CSS</label>
+    <div class="grid-14">{{widget.display_field(widget.fields.css)}}</div>
+  {% endif %}
+    <label class="grid-4">Project Template</label>
+    <div class="grid-14">{{widget.display_field(widget.fields.project_template)}}</div>
+    <label class="grid-4">Icon</label>
+    <div class="grid-14">
+      {% if neighborhood.icon %}
+        <img src="{{neighborhood.url()}}icon" style="vertical-align: middle" alt=""/>
+      {% endif %}
+      {{widget.display_field(widget.fields.icon)}}
+    </div>
+    {% if neighborhood.features and neighborhood.features['google_analytics'] %}
+    <label class="grid-4">Analytics Tracking ID</label>
+    <div class="grid-14">{{widget.display_field(widget.fields.tracking_id)}}</div>
+    {% endif %}
+    <label class="grid-4">Project List URL</label>
+    <div class="grid-14">{{widget.display_field(widget.fields.project_list_url)}}</div>
+	<label class="grid-4">Anchored tools</label>
+	<div class="grid-14">{{widget.display_field(widget.fields.anchored_tools)}}
+		<br/>
+		Anchored tools will be inserted at the beginning of all projects, and cannot be removed by a project.
+		If you change the anchored tools, already-inserted tools will stay on all those projects.  Example: "wiki:Wiki, sometool:The Label"
+	</div>
+    <label class="grid-4">Prohibited tools</label>
+    <div class="grid-14">{{widget.display_field(widget.fields.prohibited_tools)}}</div>
+    <label class="grid-4">&nbsp;</label>
+    <div class="grid-14"><input type="submit" value="Save"/></div>
+    {{lib.csrf_token()}}
+  </form>

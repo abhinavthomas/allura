@@ -1,0 +1,42 @@
+<!--!
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-->
+<div xmlns="http://www.w3.org/1999/xhtml"
+     xmlns:py="http://genshi.edgewall.org/"
+     class="$container_cls"
+     py:attrs="{'data-name':name}">
+  ${button.display()}
+  <br/>
+  <table>
+    <caption
+       class="$msg_cls"
+       data-empty-message="$empty_msg"
+       data-nonempty-message="$nonempty_msg"/>
+    <thead>
+      <tr><th py:for="col in widget.field.fields"><py:if test="col.show_label">$col.label</py:if></th></tr>
+    </thead>
+    <tbody class="$flist_cls">
+      <py:for each="i in xrange(repetitions)"
+              py:with="ctx=widget.context_for(i)">
+        <?python ctx['css_class'] = field_cls ?>
+        ${widget.field.display(**ctx)}
+      </py:for>
+      ${widget.field.display(name=name+'#', css_class=stub_cls)}
+    </tbody>
+  </table>
+</div>

@@ -1,0 +1,37 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% extends g.theme.master %}
+
+{% block title %}{{c.project.name}} / Screenshots{% endblock %}
+
+{% block header %}Project Screenshots{% endblock %}
+
+{% block content %}
+  {% if c.project.deleted %}
+    <div class="notice">This project has been deleted and is not visible to non-admin users</div>
+  {% endif %}
+  {{c.screenshot_list.display(edit=h.has_access(c.project, 'update')(),project=c.project)}}
+  {% if h.has_access(c.project, 'update')() %}
+    {% if c.project.get_screenshots().__len__() < 6 %}
+      {{c.screenshot_admin.display(action="add_screenshot")}}
+    {% else %}
+      <p>You may not have more than 6 screenshots.</p>
+    {% endif %}
+  {% endif %}
+{% endblock %}

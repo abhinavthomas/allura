@@ -1,0 +1,171 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% extends 'forgewiki:templates/wiki/master.html' %}
+{% import 'allura:templates/jinja_master/lib.html' as lib with context %}
+
+{% block title %}{{c.project.name}} / {{c.app.config.options.mount_label}} / {{page.title}}{% endblock %}
+
+{% block header %}Edit {{page.title}}{% endblock %}
+
+{% block extra_css %}
+<style type="text/css">
+  .markdown_edit .CodeMirror {
+    height: 500px;  /* match max-height in markitup_sf.css */
+  }
+</style>
+{% endblock %}
+
+{% block actions %}
+  {{ g.icons['eye'].render(href='.', title='View Page') }}
+  {% if page_exists and h.has_access(page, 'delete')() %}
+    {{ g.icons['delete'].render(extra_css='post-link') }}
+    <div class="confirmation_dialog" style="display:none">
+        {{ g.icons['close'].render(tag='b', extra_css='close') }}
+
+        <h1>Confirm page deletion</h1>
+        <p>
+            Do you really want to delete the page?
+            You can undo it later.
+        </p>
+        <p>
+            <button class="continue_confirm" href="./delete">Yes</button>
+            <input type="button" value="Cancel" class="cancel_confirmation close">
+        </p>
+    </div>
+  {% endif %}
+{% endblock %}
+
+{% block wiki_content %}
+<form method="POST" class="can-retry" action="update" id="page_edit_form">
+	<label class="grid-4">Name:</label>
+	<div class="grid-14">
+	  <input type="text" name="title" id="title" value="{{page.title}}" placeholder="Page name" required="required" autofocus="autofocus"/>
+	</div>
+	<label class="grid-20">Content:</label>
+	<div style="clear:both;"></div>
+	<div class="grid-20">
+	  {{c.markdown_editor.display(id='text', name='text',value=page.text)}}
+	</div>
+	<div style="clear:both;"></div>
+	<label class="grid-4">Labels:</label>
+	<div class="grid-14" style="margin-left:0">
+		{{c.label_edit.display(id='labels', name='labels', value=page.labels)}}
+  </div>
+  <div class="grid-19">
+    <input type="submit" value="Save">
+    <input type="reset" value="Cancel">
+	</div>
+    {{lib.csrf_token()}}
+</form>
+<div class="grid-19">
+  {{c.attachment_list.display(attachments=page.attachments, edit_mode=page_exists and h.has_access(page, 'edit')())}}
+  {% if page_exists and h.has_access(page, 'edit')() %}
+    {{c.attachment_add.display(name='file_info')}}
+  {% endif %}
+</div>
+{{c.confirmation.display(content='')}}
+{% endblock %}
+
+{% block wiki_extra_js %}
+<script type="text/javascript">
+  /*<![CDATA[*/
+  $('span.removable').click(function(e){
+    var vals = $('#page_edit_form').serialize();
+    var del_name = $('input', this)[0].name.replace('.id','.delete');
+    $.post($('#page_edit_form')[0].action, vals+'&'+del_name+'=Del', function(){
+      e.target.parentNode.removeChild(e.target);
+    });
+  });
+  $('#page_edit_form input[type=reset]').click(function(){
+    {% if page_exists %}
+      window.location.href = "{{page.url()}}";
+    {% else %}
+      window.location.href = "{{c.app.url}}";
+    {% endif %}
+  });
+  /*]]>*/
+
+  {% if page_exists %}
+  function update_attachments(attachment_url, filename, filesize){
+    if ($('.attachment_files').length + $('.attachment_files').length == 0){
+      var attach_divs = '<strong>Attachments:</strong>' +
+                        '<div class="attachment_images"></div>' +
+                        '<div class="attachment_files"></div>';
+      $(attach_divs).prependTo($('.attachments'));
+    };
+    var ext = filename.split('.').pop().toLowerCase();
+    if($.inArray(ext, ['gif','png','jpg','jpeg']) != -1) {
+      new_attach = '<div class="attachment_thumb">' +
+                     '<a href="' + attachment_url + '">' +
+                     '<img src="' + attachment_url + '/thumb" alt="Thumbnail"/>' +
+                     '</a><br/>' + filename +
+                     '<form method="post" action="' + attachment_url + '">' +
+                       '<input type="hidden" name="delete" value="True"/>' +
+                       '<input type="submit" value="Delete File"/>' +
+                     '</form>' +
+                   '</div>';
+      $(new_attach).prependTo($('.attachment_images'));
+    } else {
+      var new_attach ='<div><form method="post" action="' + attachment_url + '">' +
+                        '<a href="' + attachment_url + '">' + filename + '</a> (' + filesize + ' bytes)' +
+                        '<input type="hidden" name="delete" value="True"/>' +
+                        '<span>' +
+                          '<input type="submit" value="Delete File"/>' +
+                        '</span>' +
+                      '</form></div><div style="clear:both"></div>';
+      $(new_attach).prependTo($('.attachment_files'));
+    };
+  };
+
+  $('#attachment_form').on('submit', function(event) {
+    event.preventDefault();
+    var page_url = '{{page.url()}}';
+    $.ajax({
+      type: "POST",
+      url: page_url + 'attach',
+      data: new FormData($('#attachment_form')[0]),
+      processData: false,
+      contentType: false,
+      success: function() {
+        var i;
+        for (i = 0; i < $("#file_info")[0].files.length; i++){
+          var attachment_name = $("#file_info")[0].files[i].name;
+          var attachment_url = page_url + 'attachment/' + attachment_name;
+          update_attachments(attachment_url, attachment_name, $("#file_info")[0].files[i].size);
+        }
+      }
+    });
+  });
+
+  $('.attachments').on('submit', 'form', function(event) {
+    event.preventDefault();
+    elem = $(this);
+    var attr_url = elem.attr('action');
+    $.ajax({
+      type: "POST",
+      url: attr_url,
+      data: elem.serialize() +"&_session_id=" + $.cookie('_session_id'),
+      success:  function() {;
+        elem.parent().remove();
+      }
+    });
+  });
+  {% endif %}
+</script>
+{% endblock %}

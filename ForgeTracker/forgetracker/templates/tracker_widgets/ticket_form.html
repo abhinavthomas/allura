@@ -1,0 +1,138 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% import 'allura:templates/jinja_master/lib.html' as lib with context %}
+<form method="POST" action="{{action}}" enctype="multipart/form-data" id="ticket-form">
+  {{widget.display_field_by_name('ticket_num')|safe}}
+  {% if help_msg %}
+    <div id="new-ticket-help-msg" class="grid-19 info">{{g.markdown.convert(help_msg)}}</div>
+  {% endif %}
+  <div class="grid-18">
+    <div class="new-ticket-title">
+      <label>Create Ticket:</label>{{widget.display_field_by_name('summary')|safe}}
+    </div>
+  </div>
+    {% if widget.fields['_milestone'] %}
+      <div class="grid-6">
+        <label class="cr">Milestone:</label>
+        {{widget.display_field_by_name('_milestone')|safe}}
+      </div>
+    {% endif %}
+    <div class="grid-6">
+      <label class="cr">Status:</label>
+      {{widget.display_field_by_name('status')|safe}}
+    </div>
+    <div class="grid-6">
+      <label class="cr">Owner:</label>
+      {{widget.display_field_by_name('assigned_to')|safe}}
+    </div>
+  <div style="clear:both">&nbsp;</div>
+  {% set min_c_fields = widget.fields['_milestone'] and 1 or 0 %}
+  {% if c.app.globals.custom_fields and c.app.globals.custom_fields.__len__() > min_c_fields %}
+    {{widget.display_field_by_name('custom_fields', ignore_errors=True)}}
+  {% endif %}
+  <div style="clear:both">&nbsp;</div>
+  <div class="grid-12">
+    <label class="cr">Labels:</label>
+    {{widget.display_field_by_name('labels')|safe}}
+  </div>
+    <div class="grid-6">
+        {{widget.display_field_by_name('private')}}
+        {% if h.has_access(ticket, 'edit') %}
+        {# Only users with the ability to edit will be able to see the Discussion Disable option.
+            This also serves to hide the checkbox when creating new tickets #}
+            <div>{{widget.display_field_by_name('discussion_disabled')}}</div>
+        {% endif %}
+  </div>
+  <div style="clear:both">&nbsp;</div>
+  <div class="grid-6">
+    <label class="simple">Updated:</label>
+    {% if ticket %}
+      {{lib.abbr_date(ticket.mod_date)}}
+    {% else %}
+      Now
+    {% endif %}
+  </div>
+  <div class="grid-6">
+    <label class="simple">Created:</label>
+    {% if ticket %}
+      {{lib.abbr_date(ticket.created_date)}}
+    {% else %}
+      Now
+    {% endif %}
+  </div>
+  <div class="grid-6">
+    <label class="simple">Creator:</label>
+    {% if ticket %}
+      {{lib.user_link(ticket.reported_by)}}
+    {% else %}
+      {{lib.user_link(c.user)}}
+    {% endif %}
+  </div>
+  <div style="clear:both">&nbsp;</div>
+  <div class="grid-18">
+    {{widget.display_field_by_name('description')|safe}}
+  </div>
+  <div style="clear:both">&nbsp;</div>
+  <div class="grid-18">
+    {% if ticket %}
+      <div class="clearfix">
+      {% for att in ticket.attachments %}
+          <div class="attachment_thumb">
+            {% if att.is_image() and not att.is_embedded() %}
+              <a href="{{att.url()}}" class="file_type">
+                <img src="{{att.url()}}/thumb" alt="Thumbnail">
+              </a>
+            {% endif %}
+            <a href="{{att.url()}}">{{att.filename}}</a>
+            {{ g.icons['delete'].render(href=att.url(), extra_css='btn delete_attachment') }}
+          </div>
+      {% endfor %}
+      </div>
+      <div style="clear:both">&nbsp;</div>
+    {% endif %}
+    <div>
+      <a href="#" id="show_attach">Add attachments</a>
+    </div>
+    <div style="clear:both">&nbsp;</div>
+    <div id="view_attach" style="display:none">
+      {{widget.display_field_by_name('attachment')|safe}}
+    </div>
+  </div>
+  <div style="clear:both">&nbsp;</div>
+  <div class="reply" style="position:relative;{% if not show_comment %} display:none{% endif %}">
+    <div class="grid-2 tcenter">
+      <p class="gravatar">
+        {{lib.gravatar(c.user, size=48)}}<br>
+        <small>
+          {{lib.user_link(c.user)}}
+        </small>
+      </p>
+    </div>
+    <div class="grid-16">
+      {{widget.display_field_by_name('comment')|safe}}
+      <span class="arw"><span></span></span>
+    </div>
+  </div>
+  <div style="clear:both">&nbsp;</div>
+  <div class="grid-18">
+    {{widget.display_field_by_name('submit')|safe}}
+    <a href="{{c.app.url}}" class="btn link cancel_form">Cancel</a>
+  </div>
+  {{lib.csrf_token()}}
+</form>

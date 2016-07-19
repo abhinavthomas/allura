@@ -1,0 +1,169 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% set page = 'user_details' %}
+{% extends 'allura:templates/site_admin.html' %}
+{% set hide_left_bar=True %}
+
+{% block title %}User Details{% endblock %}
+{% block header %}User Details{% endblock %}
+
+{% block content %}
+   <div class="grid-23"><p><a href="/nf/admin">Back to Site Admin Home</a></p></div>
+
+  {% block general_info %}
+    <div class="grid-23">
+      <fieldset class="preferences">
+        <legend>General</legend>
+        <div class="grid-16">
+        <ul>
+          <li>Username: {{ user.username }} (<a href="{{ user.url() }}">Go to profile page</a>)</li>
+          <li>Full name: {{ user.get_pref('display_name') }}</li>
+          <li>Registered: {{ user.registration_date() }} ({{ h.ago(user.registration_date(), show_date_after=None) }})</li>
+        </ul>
+        {% block extra_general_info %}{% endblock %}
+        </div>
+
+        <div class="grid-6">
+        <form action='/nf/admin/user/set_status' method="POST">
+          <div class='grid-6'>
+            <label><input type="radio" name="status" value="enable"{% if status == 'enabled' %} checked="checked"{% endif %}>Enabled</label><br>
+            <label><input type="radio" name="status" value="disable"{% if status == 'disabled' %} checked="checked"{% endif %}>Disabled</label><br>
+            <label><input type="radio" name="status" value="pending"{% if status == 'pending' %} checked="checked"{% endif %}>Pending</label>
+          </div>
+          <input type='hidden' name='username' value='{{ user.username }}'>
+          {{lib.csrf_token()}}
+        </form>
+
+        <form action='/nf/admin/user/set_random_password' method="POST">
+          <input type="submit" value="Set random password">
+          <input type='hidden' name='username' value='{{ user.username }}'>
+          {{lib.csrf_token()}}
+        </form>
+
+        <form action='/nf/admin/user/send_password_reset_link' method="POST">
+          <input type="submit" value="Send password reset link">
+          <input type='hidden' name='username' value='{{ user.username }}'>
+          {{lib.csrf_token()}}
+        </form>
+        </div>
+      </fieldset>
+    </div>
+  {% endblock general_info %}
+
+  {% block emails %}
+    <div class="grid-23">
+      <fieldset class="preferences">
+        <legend>Emails</legend>
+        <form action="update_emails" method="post">
+          {% include 'allura:templates/update_emails_form.html' %}
+          <input type='hidden' name='username' value='{{ user.username }}'>
+        </form>
+      </fieldset>
+    </div>
+  {% endblock emails %}
+
+  {% block session_info %}
+    <div class="grid-23">
+      <fieldset class="preferences">
+        <legend>Session</legend>
+        <h3>Last login</h3>
+        <ul>
+          <li>Date: {{ user.last_access.login_date }} ({{ h.ago(user.last_access.login_date, show_date_after=None) }})</li>
+          <li>IP: {{ user.last_access.login_ip }}</li>
+          <li>UA: {{ user.last_access.login_ua }}</li>
+        </ul>
+        <h3>Last page access</h3>
+        <ul>
+          <li>Date: {{ user.last_access.session_date and user.last_access.session_date.date() }}</li>
+          <li>IP: {{ user.last_access.session_ip }}</li>
+          <li>UA: {{ user.last_access.session_ua }}</li>
+        </ul>
+      </fieldset>
+    </div>
+  {% endblock session_info %}
+
+  {% block extra_info %}
+  {% endblock extra_info %}
+
+  {% block audit_log %}
+    <div class="grid-23">
+      {% set al = audit_log %}
+      <fieldset class="preferences">
+        <legend>Audit log</legend>
+        <form action='/nf/admin/user/add_audit_trail_entry' method='POST'>
+          <div class='grid-22'>
+            <label for='comment'>Comment:</label>
+          </div>
+          <div class='grid-22'>
+            <textarea name="comment" cols="38" rows="5"></textarea>
+          </div>
+          <div class='grid-5'>
+            <input type='hidden' name='username' value='{{ user.username }}'>
+            <input type='submit' value='Add comment'>
+            {{lib.csrf_token()}}
+          </div>
+        </form>
+        {% if al['entries'] %}
+          {{ c.audit_log_widget.display(entries=al['entries'], limit=al['limit'], page=al['page'], count=al['count'], grid='22') }}
+        {% endif %}
+      </fieldset>
+    </div>
+  {% endblock audit_log %}
+
+  {% block user_projects %}
+    <div class="grid-23">
+      <fieldset class="preferences">
+        <legend>Projects</legend>
+        <ul>
+          {% for p in projects %}
+            <li><a href="{{ p.url() }}">{{p.name}}</a>
+                <span class="spacer">&ndash;</span>
+                <a href="{{ p.url() }}admin/">Admin</a>
+            </li>
+          {% endfor %}
+        </ul>
+      </fieldset>
+    </div>
+  {% endblock user_projects %}
+{% endblock %}
+
+{% block extra_css %}
+{{ super() }}
+<style>
+.pad table {
+  width: 860px;
+  margin-left: 0;
+}
+li .spacer {
+   margin: 0 0.5em;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script>
+$(document).ready(function() {
+  // enabled/disabled change
+  $('input[name="status"]').change(function(e) {
+    $(this).parents('form').submit();
+  });
+});
+</script>
+{% endblock %}

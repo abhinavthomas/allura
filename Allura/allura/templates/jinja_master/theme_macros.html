@@ -1,0 +1,174 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+
+{#
+Each macro is wrapped with an 'if' clause so that a custom theme may extend this file and override individual macros
+http://stackoverflow.com/questions/26582731/redefining-imported-jinja-macros
+#}
+
+
+{%  if not header %}
+{%- macro header(login_url, logout_url) %}
+<header id="site-header">
+    <div class="wrapper">
+        <div class="nav-logo">
+          {% if g.nav_logo %}
+            <a class="link-left" href="{{ g.nav_logo['redirect_link'] }}"><img class="nav-logo" style="{% if g.nav_logo['image_width'] %}width: {{g.nav_logo['image_width']}}px;{% endif %} {% if g.nav_logo['image_height'] %}height: {{ g.nav_logo['image_height'] }}px;{% endif %}" src="{{ g.nav_logo['image_path'] }}" /></a>
+          {% endif %}
+        </div>
+        <nav class="nav-left">
+          {% for nav_link in g.global_nav %}
+            <a class="link-left" href="{{ nav_link['url'] }}">{{ nav_link['title'] }}</a>
+          {% endfor %}
+        </nav>
+        <nav class="nav-main">
+          {% if c.user._id %}
+            <a class="link-right" href="/auth/preferences/">Account</a>
+            <a class="link-right" href="{{c.user.url()}}">{{name}}</a>
+            <a class="link-right" href="{{logout_url}}">Log Out</a>
+          {% else %}
+            {% if h.asbool(config.get('auth.allow_user_registration', True)) %}
+              <a class="link-right" href="/auth/create_account">Register</a>
+            {% endif %}
+            <a class="link-right" href="{{login_url}}?return_to={{ h.urlquote(request.path_qs) }}">Log In</a>
+          {% endif %}
+        </nav>
+    </div>
+</header>
+{%- endmacro %}
+{% endif %}
+
+{% if not footer %}
+{%- macro footer(year, path_to_static='') %}
+<footer id="site-footer">
+  <nav>
+      <p>This project is powered by <a href="https://allura.apache.org/">Apache Allura</a>&trade;.</p>
+  </nav>
+</footer>
+{%- endmacro %}
+{% endif %}
+
+{% if not custom_js %}
+{%- macro custom_js(path_to_static) %}
+
+{%- endmacro %}
+{% endif %}
+
+{% if not custom_tracking_js %}
+{%- macro custom_tracking_js(accounts, user, project) %}
+    {# This should be overridden in your custom theme (e.g., sftheme) to implement custom tracking code. #}
+    var _gaq = _gaq || [];
+
+    function _add_tracking(prefix, tracking_id) {
+        _gaq.push(
+            [prefix+'._setAccount', tracking_id],
+            [prefix+'._trackPageview']
+        );
+    }
+
+    {%- for account in accounts %}
+    _add_tracking('sfnt{{ loop.index }}', '{{account}}');
+    {%- endfor %}
+    {% if project and project.neighborhood.features['google_analytics'] -%}
+      {% if project.neighborhood.tracking_id -%}
+          _add_tracking('nbhd', '{{project.neighborhood.tracking_id}}');
+      {%- endif %}
+      {% if project.tracking_id -%}
+          _add_tracking('proj', '{{project.tracking_id}}');
+      {%- endif %}
+    {%- endif %}
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' === document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+{%- endmacro %}
+{% endif %}
+
+{% if not extra_header %}
+{%- macro extra_header(path_to_static) %}
+
+{%- endmacro %}
+{% endif %}
+
+{% if not breadcrumbs %}
+{%- macro breadcrumbs(project, app) %}
+    <nav id="breadcrumbs">
+        <ul>
+            <li><a href="/">Home</a></li>
+            {% for label,url in project.breadcrumbs() %}
+                {% if not loop.last or app %}
+                    <li><a href="{{ url }}">{{ label }}</a></li>
+                {% else %}
+                    <li>{{ label }}</li>
+                {% endif %}
+            {% endfor %}
+            {% if app %}
+                <li>{{ app.config.options.mount_label }}</li>
+            {% endif %}
+        </ul>
+    </nav>
+{%- endmacro %}
+{% endif %}
+{% if not project_header_right %}
+{%- macro project_header_right(project, app) %}
+  {% if project.neighborhood.icon %}
+  <div class="neighborhood_block">
+    <a href="{{project.neighborhood.url()}}"><img src="{{project.neighborhood.url()}}icon" class="neighborhood_icon"
+       alt="Return to {{project.neighborhood.name}}" title="Return to {{project.neighborhood.name}}"></a>
+       <div class="neighborhood_title">
+         <h3><a href="{{project.neighborhood.url()}}">{{project.neighborhood.name}}</a></h3>
+         {% if project.neighborhood.project_list_url %}
+           <div class="neighborhood_title_link">
+           <a href="{{project.neighborhood.project_list_url}}">
+             View More Projects
+           </a>
+           </div>
+         {% endif %}
+    </div>
+  </div>
+  {% endif %}
+{%- endmacro %}
+{% endif %}
+
+{% if not login_overlay %}
+{%- macro login_overlay() %}
+    {% do g.register_js('js/jquery.lightbox_me.js') %}
+    {% do g.register_js('js/login_overlay.js') %}
+    <div id="login_overlay" class="ui-widget-content">
+        <h2 class="dark title">Login Required</h2>
+        <iframe src="{{g.login_fragment_url}}"></iframe>
+    </div>
+{%- endmacro %}
+{% endif %}
+
+{% if not site_notification %}
+{%- macro site_notification() %}
+    {% set note = g.theme.get_site_notification() %}
+    {% if note %}
+        <div id="site-notification">
+            <section class="site-message info" data-notification-id="{{note._id}}">
+                {{note.content|safe}}
+                <a href="" class="btn btn-close">Close</a>
+            </section>
+        </div>
+    {% endif %}
+{%- endmacro %}
+{% endif %}

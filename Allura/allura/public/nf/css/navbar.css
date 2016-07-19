@@ -1,0 +1,354 @@
+/*
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+*/
+
+#bar-config {
+    position: absolute;
+    right: 0;
+    top: -30px;
+}
+
+#toggle-admin-btn {
+    position: absolute;
+    background: white;
+    right: -11px;
+    top: -1px;
+    width: 1.8rem;
+    height: 1.8rem;
+}
+
+#toggle-admin-btn:focus {
+    outline: none;
+}
+
+#threshold-config > span > input {
+    width: 2rem;
+    background-color: #F2F2F2;
+    color: #333;
+    font-weight: bold;
+}
+
+#top_nav_admin {
+    overflow: hidden;
+    width: 918px; /* 940px - 32px for toggle-admin-btn */
+}
+
+#top_nav {
+    border-bottom: 1px solid #ccc;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+    box-shadow: 0 1px 1px #ccc;
+}
+
+#top_nav_admin ul.dropdown {
+    border: none;
+    box-shadow: none;
+}
+
+.config-tool {
+    color: #555;
+    cursor: context-menu;
+}
+
+#admin-toolbar-list {
+    border-bottom: 1px solid transparent;
+}
+
+.draggable-handle, .draggable-handle-sub {
+    margin-left: 2px;
+    cursor: move;
+}
+
+.anchored .draggable-handle,
+.anchored .draggable-handle-sub {
+    cursor: default;
+    color: gray;
+}
+
+.react-reorderable-item-active {
+    border: 3px dashed #9e9e9e;
+    background: #c9c9c9;
+    width: 6rem; /* dynamic would be nice */
+    height: 30px;
+}
+
+.react-reorderable-item-active div {
+    display: none;
+}
+
+.react-reorderable-item {
+    float: left;
+}
+
+/* this is the div that moves around with the cursor, when dragging */
+#top_nav_admin .react-reorderable-handle {
+    position: absolute;
+    background: rgba(255, 48, 13, 0.2);
+    border: 3px dashed rgba(255, 48, 13, 0.3);
+    min-width: 4em;
+}
+
+#top_nav_admin .tb-item a {
+    border-right: 1px solid #ccc;
+    padding: 0 10px;
+    margin: 10px 0;
+}
+
+#top_nav_admin .tb-item-grouper a {
+    border-right: 1px transparent;
+}
+
+.react-drag {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    -o-user-select: none;
+    user-select: none;
+}
+
+.react-drag.dragging .react-reorderable-item {
+    background: #ccc;
+}
+
+/* .react-drag used to distinguish container used in locked vs unlocked modes */
+#add-tool-container {
+    float: left;
+    margin-left: 10px;
+}
+
+#add-tool-container .add-tool-toggle {
+    margin-top: 5px;
+}
+
+.tb-item-edit a {
+    margin-left: 2px;
+}
+
+.add-new-tool-field {
+    width: 170px;
+    margin-bottom: 10px;
+}
+
+.add-new-tool-field label {
+    color: #7C7C7C;
+}
+
+#add-tool-url-preview {
+    font-size: large;
+    width: 171px;
+    position: absolute;
+    text-align: left;
+    right: 24px;
+    bottom: 127px;
+}
+
+#add-tool-url-preview strong {
+    color: orange;
+}
+
+#new-tool-submit {
+    width: 138px;
+    font-size: larger;
+    margin-left: 15px;
+    min-height: 1.6rem;
+    position: relative;
+    margin-bottom: 32px;
+}
+
+#installable-items {
+    width: 18%;
+    float: left;
+    display: flex;
+    flex-direction: column;
+}
+
+.add-tool-field input {
+    width: 100px;
+    height: 18px;
+    font-size: large;
+    color: #555;
+    margin: 15px;
+}
+
+.tb-item-grouper {
+    display: none;
+    background: white;
+    position: absolute;
+    top: 32px;
+    white-space: nowrap;
+}
+
+.tb-item-container {
+    float: left;
+}
+
+.tb-item-container:hover .tb-item-grouper,
+.tb-item-container.child-options-open .tb-item-grouper {
+    display: block;
+}
+
+.tb-item-grouper .react-reorderable-item-active {
+    border: 3px dashed #9e9e9e;
+    background: #c9c9c9;
+    width: calc(100% - 6px);
+    height: 24px;
+}
+
+.react-reorderable-item .tb-item-grouper > div {
+    position: relative;
+    background: white;
+}
+
+.react-reorderable-item .tb-item-grouper > div > div {
+    display: flex;
+    flex-direction: column;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.4);
+    border-radius: 3px;
+    min-width: 150px;
+}
+
+#top_nav_admin .contextMenu a {
+    text-align: left;
+    border-right: 0;
+    margin: 4px 0;
+    overflow: hidden !important;
+    white-space: nowrap;
+    width: auto;
+    padding: 0 1em 0 0.5em !important;
+    clear: both;
+}
+
+.tb-item-grouper .tb-item {
+    border: 1px solid #e5e5e5;
+    border-bottom: none;
+    overflow: hidden;
+}
+
+.anchored {
+    float: left;
+}
+
+#top_nav .tb-item-grouper a {
+    text-align: left;
+}
+
+#add-tool-container {
+    padding-bottom: 0 !important;/* cancel out the site style for dropdown <li>s, since this is already fairly tall */
+}
+
+
+#top_nav .add-tool-toggle {
+    border: 1px dashed #B9B9B9;
+    color: #0077aa;
+    padding: 3px 7px;
+    margin-top: -4px;
+    float: left;
+    border-radius: 2px;
+    cursor: pointer;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    -o-user-select: none;
+    user-select: none;
+}
+
+#top_nav .add-tool-toggle:hover {
+    color: #0099cc;
+    background: #F4F4F4;
+    text-decoration: underline;
+}
+
+.contextMenu {
+    background: #f0f0f0;
+    border: 1px solid #999;
+    box-shadow: -2px 2px 6px #555;
+    position: absolute;
+    margin-top: 20px;
+    margin-left: 15px;
+    border-radius: 4px;
+    z-index: 20200;
+    white-space: nowrap;
+    clear: both;
+}
+
+.contextMenu > ul {
+    list-style: none;
+    border: none;
+    margin-left: 2px;
+    visibility: visible !important;
+}
+
+#add-tool-container > div > div {
+    margin-left: -10px;
+}
+
+#add-tool-container .contextMenu {
+    border: none;
+    background: white;
+    text-align: left;
+    top: 15px;
+}
+
+#add-tool-container .contextMenu ul {
+    position: initial !important;
+    border: none;
+    background: white;
+    text-align: left;
+    margin: 0 !important;
+    top: 0;
+}
+
+#add-tool-container li {
+    overflow: auto;
+    border: 1px solid #e5e5e5;
+    border-bottom: none;
+    min-width: 100px;
+    margin: 0;
+    display: block;
+    padding: 0.3em 0.5em 0.3em 0.3em !important;
+}
+
+#add-tool-container li:hover {
+    color: white;
+    background-color: #09c;
+    background-image: linear-gradient(#09c, #07a);
+    border-color: #07a;
+}
+
+#add-tool-container li:hover a {
+    color: white !important;
+
+}
+
+#add-tool-container li:first-child {
+    border-top: 0;
+}
+
+#add-tool-container a {
+    margin: 4px 0;
+    border-right: none;
+    white-space: nowrap;
+}
+
+#top_nav_admin .tool_option > a {
+    border-right: none !important;
+}
+
+.unlocked-container{
+    margin-top: 10px;
+}

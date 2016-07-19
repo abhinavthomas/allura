@@ -1,0 +1,138 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% from 'allura:templates/jinja_master/lib.html' import abbr_date with context %}
+<div id="ticket_search_results_holder">
+  {% if solr_error %}<p>{{solr_error}}</p>{% endif %}
+  {{widget.fields['page_size'].display(page=page, count=count, limit=limit)}}
+  {% if count %}
+    <table class="ticket-list">
+      <thead>
+        <tr>
+          {% for col in columns if col['active'] %}
+            <th title="{{col['label']}}" data-filter-toggle="{{col['name']}}">
+              {% if col['name'] == 'ticket_num' %}
+                #
+              {% else %}
+                {{col['label']}}<span class="filter-ico">&#x25BE;</span>
+              {% endif %}
+              <ul class="ticket-filter" data-column="{{col['name']}}">
+              <li><a data-sort-asc="{{col['sort_name']}}" title="{{col['label']}}">Sort A -> Z</a></li>
+              <li><a data-sort-desc="{{col['sort_name']}}" title="{{col['label']}}">Sort Z -> A</a></li>
+              {% if col['name'] in widget.filters.keys() %}
+                <li>Filter by {{col['label']}}</li>
+                <li>
+                  <select name="filter-{{col['name']}}" data-label="{{col['label']}}" multiple="multiple">
+                    {% for o in widget.filters[col['name']] %}
+                      <option value="{{o['value']}}"{% if o['selected'] %} selected="selected"{% endif %}>{{o['label']}}</option>
+                    {% endfor %}
+                  </select>
+                </li>
+                <li class="btns">
+                  <input type="button" value="Ok" class="apply-filters">
+                </li>
+              {% endif %}
+               </ul>
+            </th>
+          {% endfor %}
+          <th id="select_col_menu">
+            {{ g.icons['admin'].render(id='col_menu', title='Select Columns') }}
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in tickets %}
+          <tr class="{{loop.index0%2 and 'even' or ''}} {% if t.deleted %}deleted{%endif%}">
+            {% for col in columns if col['active'] %}
+              {% if col['name'] == 'ticket_num' %}
+                <td><a href="{{t.url()}}">{{t[col['name']]}}</a></td>
+              {% elif col['name'] == 'summary' %}
+              <td><a href="{{t.url()}}">{{t[col['name']]}}</a></td>
+              {% elif col['name'] == 'status' %}
+                <td class="{{t.open_or_closed}}">{{t.status}}</td>
+              {% elif col['name'] == 'assigned_to' %}
+                <td>{% if t.assigned_to_id %}{{t.assigned_to.display_name}}{% endif %}</td>
+              {% elif col['name'] == 'reported_by' %}
+              <td>{% if t.reported_by %}{{t.reported_by.display_name}}{% endif %}</td>
+              {% elif col['name'] == 'created_date' %}
+              <td>{% if t.created_date %}{{abbr_date(t.created_date)}}{% endif %}</td>
+              {% elif col['name'] == 'mod_date' %}
+              <td>{% if t.mod_date %}{{abbr_date(t.mod_date)}}{% endif %}</td>
+              {% elif col['name'] == 'labels' %}
+              <td>
+                  {%- for l in t.labels -%}
+                  <a href="{{c.app.url}}search?q=labels:%22{{h.urlquoteplus(l)}}%22">{{l}}</a>
+                    {%- if not loop.last -%}, {% endif -%}
+                  {%- endfor -%}
+              </td>
+              {% elif col['name'] == 'votes' %}
+                <td>{{ t.votes }}</td>
+              {% else %}
+                {% set fld = c.app.globals.get_custom_field(col['name']) %}
+                {% if fld and fld.type == 'user' %}
+                  {% set user = t.get_custom_user(col['name']) %}
+                  <td>{% if user %}{{user.get_pref('display_name')}}{% endif %}</td>
+                {% else %}
+                  <td>{{t.custom_fields.get(col['name'])}}</td>
+                {% endif %}
+              {% endif %}
+            {% endfor %}
+            <td>&nbsp;</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <form action="." id="col_list_form">
+      <input type="hidden" name="limit" value="{{limit}}">
+      <input type="hidden" name="page" value="{{page}}">
+      {% if sort %}
+      <input type="hidden" name="sort" value="{{sort}}">
+      {% endif %}
+      <input type="hidden" name="q" value="{{query}}">
+      <input type="hidden" name="filter" value="{{filter}}">
+      <ul>
+      {% for col in columns %}
+        <li class="clear">
+          <input type="hidden" name="columns-{{loop.index0}}.name" value="{{col['name']}}">
+          <input type="hidden" name="columns-{{loop.index0}}.sort_name" value="{{col['sort_name']}}">
+          <input type="hidden" name="columns-{{loop.index0}}.label" value="{{col['label']}}">
+          <input type="checkbox" name="columns-{{loop.index0}}.active"{% if col['active'] %} checked="checked"{% endif %}> {{col['label']}}
+        </li>
+      {% endfor %}
+      </ul>
+      <div class="clear">&nbsp;</div>
+      <input type="submit" value="Save">
+      (applies to this page only)
+      {% if h.has_access(c.app, 'configure') %}
+          <a href="{{c.project.url()}}admin/{{c.app.config.options.mount_point}}/fields">Change field settings permanently.</a>
+      {% endif %}
+    </form>
+    {{widget.fields['lightbox'].display()}}
+  {% endif %}
+  {{widget.fields['page_list'].display(limit=limit, page=page, count=count)}}
+  <script type="text/javascript">
+    var q="{{query and h.urlquoteplus(query) or ''}}", count={{count}}, limit={{limit}}, page={{page}}, sort="{{sort if sort else ''}}";
+    var filter = {{h.escape_json(filter or {})|safe}};
+  </script>
+</div>
+{% block wiki_extra_css %}
+<style type="text/css">
+    tr.deleted a { color:red; }
+    tr.deleted { color:red; }
+</style>
+{% endblock %}

@@ -1,0 +1,84 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+<div class="fleft active-card">
+  <input type="hidden" name="card-{{index}}.id" value="{{id}}"/>
+  <ul class="deck">
+    <li class="tcenter">
+      <h3>{{name}}</h3>
+      {% if settings_href %}
+      {{ g.icons['perm_tool'].render(
+          href=settings_href,
+          extra_css='admin_modal',
+          title='%s Settings' % (name)) }}
+      {% endif %}
+      <p style="padding-bottom: 0">{{ g.icons[icon_name].render(tag='span', extra_css='x24') }}</p>
+      {% if desc %}
+      <p>{{ desc }}</p>
+      {% endif %}
+      <ul class="subroles">
+        {% for role in roles %}
+          {% if role.name %}
+            <li>includes the {{ widget.role_name(role._id) }} group</li>
+          {% endif %}
+        {% endfor %}
+      </ul>
+    </li>
+    {% for item in items | sort(attribute=widget.sort_key) %}
+    <li>
+        <a href="#" class="deleter">
+          {{ widget.item_display(item) }}
+          <input type="hidden" name="card-{{index}}.value"
+                 {{ widget.j2_attrs(dict(value=widget.item_id(item))) }} />
+          {{ g.icons['perm_delete'].render(tag='small') }}
+        </a>
+    </li>
+    {% endfor %}
+    <li class="new-item">
+      {{ widget.new_item.display(name='card-%s.new' % index) }}
+    </li>
+    <li>
+      <a href="#"  class="adder">
+        Add
+        {{ g.icons['add'].render(title="Add a user", tag="small") }}
+      </a>
+    </li>
+    <li>
+        <a href="#" class="block-user">
+            Block User
+        </a>
+    </li>
+
+    <li{% if not block_list or not block_list.get(name) %} style="display:none;"{% endif %}>
+      <a href="#" class="block-list">Block List</a>
+      <div class="block-list grid-13" style="display: none">
+        <ul>
+        {% if block_list and block_list.get(name) %}
+          {% for u, reason in block_list[name] %}
+          <li>
+            <label>
+              <input type="checkbox" name="user_id" value="{{ u._id }}">{{ u.username }} {{ '(' + reason + ')' if reason else '' }}
+            </label>
+          </li>
+          {% endfor %}
+        {% endif %}
+        </ul>
+      </div>
+    </li>
+  </ul>
+</div>

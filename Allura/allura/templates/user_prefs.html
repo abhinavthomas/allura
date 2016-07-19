@@ -1,0 +1,197 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% set hide_left_bar = True %}
+{% extends "allura:templates/user_account_base.html" %}
+
+{% block title %}{{c.user.username}} / Preferences{% endblock %}
+
+{% block header %}User Preferences for {{c.user.username}}{% endblock %}
+
+{% block content %}
+{% do g.register_js('js/jquery.lightbox_me.js') %}
+  {{ super() }}
+  <div class="grid-23">
+    <h2>Preferences</h2>
+    {% block info %}
+    <fieldset class="preferences">
+      <legend>Username: {{ c.user.username }}</legend>
+      <p><a href="{{ c.user.private_project().url() }}">My profile and my projects</a></p>
+      <p><a href="{{ c.user.url() }}activity/">Activity I follow</a></p>
+      <p><a href="{{ c.user.private_project().url() }}admin/overview">Set avatar icon</a></p>
+      {% if h.asbool(tg.config.get('auth.allow_user_to_disable_account', False)) %}
+        <p><a href="/auth/disable">Disable account</a></p>
+      {% endif %}
+    </fieldset>
+    {% endblock info %}
+
+    {% block edit_prefs_form %}
+      {% if h.asbool(tg.config.get('auth.allow_edit_prefs', True)) %}
+        <fieldset class="preferences">
+          <legend>General Settings</legend>
+          <form action="update" method="POST">
+            <label class="grid-4">Display Name</label>
+            <div class="grid-18">
+              <input name="preferences.display_name" value="{{c.user.display_name}}" type="text">
+            </div>
+            <label class="grid-4">Page Size</label>
+            <div class="grid-18">
+              <select name="preferences.results_per_page">
+                {% for per_page in [25, 50, 100, 250] %}
+                    <option {% if per_page == c.user.preferences.results_per_page %}selected="selected"{% endif %}
+                       value="{{per_page}}">{{per_page}}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="grid-22">
+              {{lib.submit_button('Save')}}
+            </div>
+            {{lib.csrf_token()}}
+          </form>
+        </fieldset>
+
+        <fieldset class="preferences">
+          <legend>Email addresses</legend>
+          <form action="update_emails" method="post" name="update-email">
+            {% include 'allura:templates/update_emails_form.html' %}
+            {{lib.hidden_field('password', '')}}
+          </form>
+        </fieldset>
+
+      <!-- popup -->
+      <form class="cur_password" style="display:none">
+        <div class="grid-13">
+          <p>{{lib.password_field('current_password', 'Current password:')}}</p>
+        </div>
+        <div class="grid-13">
+          <p>
+          <input type="submit" name="enter_pass_submit" value="Ok">
+          <input type="button" name="cancel_lightbox" value="Cancel">
+          </p>
+        </div>
+      </form>
+      {{c.enter_password.display(content='<h1>Enter password</h1>')}}
+      <!-- end popup -->
+
+      {% endif %}  {# allow_edit_prefs #}
+    {% endblock edit_prefs_form %}
+
+
+    {% block password_change_form %}
+      {% if h.asbool(tg.config.get('auth.allow_password_change', True)) %}
+        <fieldset class="preferences">
+          <legend>Change Password</legend>
+          {{ c.password_change_form.display() }}
+        </fieldset>
+      {% endif %}
+    {% endblock %}
+
+    {% block upload_key_form %}
+      {% if h.asbool(tg.config.get('auth.allow_upload_ssh_key', False)) %}
+        <fieldset class="preferences">
+          <legend>Upload ssh public key</legend>
+          {{ c.upload_key_form.display() }}
+        </fieldset>
+      {% endif %}
+    {% endblock %}
+
+    {% block user_messages_form %}
+      {% if h.asbool(tg.config.get('auth.allow_user_messages_config', True)) %}
+        <fieldset class="preferences">
+          <legend>User Messages</legend>
+          <form method="POST" action="user_message">
+          <div class="grid-10">
+              <input type="checkbox" id="allow_user_messages" name="allow_user_messages" {% if not c.user.get_pref('disable_user_messages') %} checked {% endif %}>
+              <label for="allow_user_messages">Allow another user to send me direct email messages</label>
+          </div>
+          <div class="grid-2">
+              <input class="submit" type="submit" value="Save">
+          </div>
+          {{ lib.csrf_token() }}
+          </form>
+        </fieldset>
+      {% endif %}
+    {% endblock %}
+  </div>
+{% endblock %}
+
+{% block extra_css %}
+{{ super() }}
+<style>
+  .pad hr {
+    margin: 15px 10px;
+    width: 860px;
+    padding: 0;
+    border: 0;
+  }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+  {% if h.asbool(tg.config.get('auth.allow_edit_prefs', True)) %}
+  {# js to ask for a current password on the email form #}
+  <script type="text/javascript">
+      $(function() {
+
+        function launch() {
+          var enter_password_popup = $('#lightbox_enter_password');
+          var enter_password_form = $('.cur_password');
+
+          enter_password_popup.append(enter_password_form.show());
+          enter_password_popup.lightbox_me({
+            onLoad: function() {
+            $('.cur_password').find('input:first').focus();
+            }
+          });
+        };
+
+        $("input[name='enter_pass_submit']").click(function (e) {
+          $("input[name='password']").val(
+              $("input[name='current_password']").val()
+            );
+          $("form[name='update-email']").submit();
+          e.preventDefault();
+        });
+
+        $("input[name='cancel_lightbox']").click(function(){
+          $('.cur_password').trigger('close');
+          return false;
+        });
+
+        $("input[name='new_addr.claim'], input[name='addr-save']").click(function(e) {
+          if ($("input[name='password']").val() == ''){
+            e.preventDefault();
+          }
+          if ($(this).attr('name') == 'addr-save' || $("input[name='new_addr.addr']").val().length != 0) {
+            launch();
+          }
+        });
+
+        $('input:submit', ".addr-delete").click(function(e) {
+          if ($("input[name='password']").val() == ''){
+            e.preventDefault();
+          }
+          $('input:hidden', ".addr-delete").val("");
+          var attr_del = $(this).attr('name')
+          $(document.getElementById(attr_del)).val("1");
+          launch();
+        });
+      });
+  </script>
+  {% endif %}
+ {% endblock %}

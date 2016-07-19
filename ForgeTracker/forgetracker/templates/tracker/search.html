@@ -1,0 +1,118 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% extends g.theme.master %}
+{% import 'allura:templates/jinja_master/lib.html' as lib with context %}
+{% do g.register_app_css('css/tracker.css') %}
+
+{% block title %}{{c.project.name}} / {{c.app.config.options.mount_label}} / Search{% endblock %}
+
+{% block header %}Search {{c.app.config.options.mount_point}}: {{q}}{% endblock %}
+
+{% block head %}
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="feed.rss"/>
+  <link rel="alternate" type="application/atom+xml" title="Atom" href="feed.atom"/>
+{% endblock %}
+
+{% block actions %}
+  {{ lib.maximize_content_button() }}
+  {% set feed_url = tg.url(c.app.url+'search_feed/', dict(q=q, limit=limit, sort=sort)) %}
+  {{ g.icons['feed'].render(href=feed_url) }}
+{% if allow_edit and count != 0 %}
+  {% set bulk_edit_url = tg.url(c.app.url+'edit/', dict(q=q, limit=limit, sort=sort, page=page, filter=filter)) %}
+  {{ g.icons['edit'].render(href=bulk_edit_url, title='Bulk Edit') }}
+{% endif %}
+{% if allow_move and count != 0 %}
+  {% set bulk_move_url = tg.url(c.app.url+'move/', dict(q=q, limit=limit, sort=sort, page=page, filter=filter)) %}
+  {{ g.icons['move'].render(href=bulk_move_url, title='Bulk Move', show_title=True) }}
+{% endif %}
+{% endblock %}
+
+{% if q and h.has_access(c.app, 'save_searches')() %}
+  {% block edit_box %}
+    <div class="editbox" style="display:none">
+      {{c.bin_form.display(
+        value=dict(summary=q,terms=q,sort=sort,_id=bin and bin._id or None),
+        action=c.project.url()+'admin/'+c.app.config.options.mount_point+'/bins/save_bin'
+      )}}
+    </div>
+  {% endblock %}
+{% endif %}
+
+{% block content %}
+{%if h.has_access(c.app, 'delete') and c.app.globals.has_deleted_tickets()%}
+<p>
+    {%if deleted%}
+    <a href="{{tg.url('', dict(q=q, page=page, limit=limit, sort=sort, deleted=False))}}">Hide deleted tickets</a>
+    {%else%}
+    <a  href="{{tg.url('', dict(q=q, page=page, limit=limit, sort=sort, deleted=True))}}">Show deleted tickets</a>
+    {%endif%}
+</p>
+{%endif%}
+{% if help_msg %}
+  <div id="search-ticket-help-msg" class="grid-19 info">{{g.markdown.convert(help_msg)}}</div>
+{% endif %}
+<div class="grid-19">
+{% if bin %}
+  <input type="text" id="bin_summary" value="{{bin.summary}}" style="width: 125px; float: left; margin-right: .5em">
+{% endif %}
+<form method="GET">
+  <input type="text" name="q" value="{{q}}" style="width: 280px; float: left; margin-right: .5em" id="bin_terms">
+  {% if bin and h.has_access(c.app, 'save_searches')() %}
+    <input type="button" value="Update Search" id="save_search"/>
+  {% endif %}
+  <input type="submit" value="Search"/>
+</form>
+{{ g.icons['help'].render(
+    show_title=True,
+    target='_blank',
+    href=tg.url(c.app.url + 'search_help/'),
+    extra_css='btn search_help_modal') }}
+
+</div>
+<div style="clear:both"></div>
+{{c.ticket_search_results.display(solr_error=solr_error,
+  count=count,
+  limit=limit,
+  query=q,
+  filter=filter,
+  tickets=tickets,
+  sortable_custom_fields=sortable_custom_fields,
+  columns=columns,
+  page=page,
+  sort=sort)}}
+
+{% endblock %}
+
+{% block extra_js %}
+
+{% if q and h.has_access(c.app, 'save_searches')() %}
+    <script type="text/javascript">
+      $('#save_search').click(function(){
+        $('div.editbox input[name=summary]').val($('#bin_summary').val());
+        $('div.editbox input[name=terms]').val($('#bin_terms').val());
+        $('div.editbox form').submit();
+      });
+      $('#cancel_new_bin').click(function(){
+        $('div.editbox').hide();
+      });
+
+    </script>
+{% endif %}
+
+{% endblock %}

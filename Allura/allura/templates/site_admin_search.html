@@ -1,0 +1,61 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+
+{% set page_num = page %}
+{% set page = 'search_results' %}
+{% set hide_left_bar = True %}
+
+{% extends 'allura:templates/site_admin.html' %}
+
+{% block title %}Search {{ type_s }}s{% endblock %}
+{% block header %}Search {{ type_s }}s{% endblock %}
+
+{% block content %}
+  <div class="grid-23"><p><a href="/nf/admin">Back to Site Admin Home</a></p></div>
+
+  <div class="grid-23">
+    {{ c.search_form.display(q=q, f=f) }}
+  </div>
+
+  {% if objects %}
+    <div style="overflow:auto; clear:both">
+      <table>
+        {% include search_results_template %}
+      </table>
+    </div>
+  {% endif %}
+
+  <div class="grid-23">
+    {{c.page_list.display(limit=limit, page=page_num, count=count)}}
+    {{c.page_size.display(limit=limit, page=page_num, count=count)}}
+  </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .pad table {
+    clear: both;
+    width: 900px;
+  }
+  table th {
+    text-align: left;
+    padding: 5px 10px;
+  }
+</style>
+{% endblock %}

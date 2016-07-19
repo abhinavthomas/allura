@@ -1,0 +1,39 @@
+#       Licensed to the Apache Software Foundation (ASF) under one
+#       or more contributor license agreements.  See the NOTICE file
+#       distributed with this work for additional information
+#       regarding copyright ownership.  The ASF licenses this file
+#       to you under the Apache License, Version 2.0 (the
+#       "License"); you may not use this file except in compliance
+#       with the License.  You may obtain a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#       Unless required by applicable law or agreed to in writing,
+#       software distributed under the License is distributed on an
+#       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+#       KIND, either express or implied.  See the License for the
+#       specific language governing permissions and limitations
+#       under the License.
+
+- oauth_1_0:
+    description: |
+        OAuth 1.0 may be used to authenticate API requests.
+
+        Another option which is simpler in some ways is "bearer tokens":
+
+        A bearer token (aka access token) may be generated at https://forge-allura.apache.org/auth/oauth/ and used
+        in an HTTP header like:
+
+        `Authorization: Bearer MY_BEARER_TOKEN`
+
+          or in a URL like
+
+        `?access_token=MY_BEARER_TOKEN`
+
+        To use bearer tokens, choose "Anonymous" security and then use the Authorization header to enter your Bearer token.
+    type: OAuth 1.0
+    settings:
+      requestTokenUri: https://forge-allura.apache.org/rest/oauth/request_token
+      authorizationUri: https://forge-allura.apache.org/rest/oauth/authorize
+      tokenCredentialsUri: https://forge-allura.apache.org/rest/oauth/access_token
+

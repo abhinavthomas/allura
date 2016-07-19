@@ -1,0 +1,56 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% import 'allura:templates/jinja_master/lib.html' as lib with context %}
+<div class="editbox">
+<form method="{{method}}"
+      {% if enctype %}enctype="{{enctype}}"{% endif %}
+      action="{{action}}">
+  <div class="grid-19">
+    <label class="cr">Title:</label>
+    {{widget.display_field(widget.fields.title)}}
+  </div>
+  <div class="grid-19">
+    {{widget.display_field(widget.fields.text)}}
+  </div>
+  <div class="grid-6">
+    <label class="cr">State:</label>
+    {{widget.display_field(widget.fields.state)}}
+  </div>
+  <div class="grid-13">
+    <label class="cr">Labels:</label>
+    {{widget.display_field(widget.fields.labels)}}
+  </div>
+  {% for field in widget.fields %}
+    {% if field.field_type == 'hidden' %}
+      {% set ctx=widget.context_for(field) %}
+      {{field.display(**ctx)}}
+    {% endif %}
+  {% endfor %}
+  <hr/>
+  <div class="grid-19">
+    {% for b in buttons %}
+      {{b.display()}}
+    {% endfor %}
+    <a href="{{c.app.url}}" class="btn link cancel_form">Cancel</a>
+  </div>
+  {% if widget.antispam %}{% for fld in g.antispam.extra_fields() %}
+  {{fld}}{% endfor %}{% endif %}
+  {% if method.upper() == 'POST' %}{{lib.csrf_token()}}{% endif %}
+</form>
+</div>

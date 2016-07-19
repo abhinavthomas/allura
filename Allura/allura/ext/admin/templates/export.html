@@ -1,0 +1,69 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% extends g.theme.master %}
+
+{% block title %}{{c.project.name}} / Admin / Export{% endblock %}
+
+{% block header %}Project Export{% endblock %}
+
+{% block extra_js %}
+  {{ super() }}
+  <script type="text/javascript">
+    $(function() {
+      $('#check-all').click(function() {
+        $(':checkbox[name="tools"]').prop('checked', $(this).prop('checked'));
+      });
+    });
+  </script>
+{% endblock %}
+
+{% block content %}
+
+{% if status == 'busy' %}
+<div class="info">
+  <h2>Busy</h2>
+  This project is queued for export.  You can't start another export yet.
+</div>
+{% endif %}
+
+<div class="grid-19">
+  {% if tools %}
+    <form method="POST" action="">
+      <div class="grid-19">
+        <input type="checkbox" id="check-all"><label for="check-all">Check All</label>
+      </div>
+      <p>&nbsp;</p>
+      {% for tool in tools %}
+      <div class="grid-19">
+        <input type="checkbox" name="tools" id="tool-{{ loop.index }}" value="{{ tool.options.mount_point }}">
+        <label for="tool-{{ loop.index }}">{{ tool.options.mount_label }}</label> <a href="{{ tool.url() }}">{{ tool.url() }}</a>
+      </div>
+      {% endfor %}
+      <p>&nbsp;</p>
+      <div class="grid-19">
+        <input type="checkbox" id="with_attachments" name="with_attachments"><label for="with_attachments">With attachments (attachments size: {{ total_size }} MB)</label><br>
+      </div>
+      <p><div class="grid-19"><input type="submit" value="Export" {% if status == 'busy' %}disabled{% endif %}></div></p>
+      {{lib.csrf_token()}}
+    </form>
+  {% else %}
+    There are no exportable tools in your project.
+  {% endif %}
+</div>
+{% endblock %}

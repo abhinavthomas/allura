@@ -1,0 +1,92 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% extends 'allura:templates/repo/repo_master.html' %}
+
+{% block title %}
+  {% if c.app.repo %}
+    Git Repository: {{c.app.repo.name}}
+  {% else %}
+    Git Repository
+  {% endif %}
+{% endblock %}
+
+{% block header %}{{c.app.config.options.mount_label}}{% endblock %}
+
+{% block content %}
+  {{ clone_info(c.app.repo) }}
+  {% if log %}
+    <h2>Recent Commits{% if branch %} on {{branch}}{% endif %}</h2>
+    {{c.log_widget.display(value=log, show_paging=False,
+                           limit=limit, page=page, count=count)}}
+    {% if int(count) > int(limit) %}
+      <a href="log?page=1">More</a>
+    {% endif %}
+  {% elif is_empty %}
+    {% if h.has_access(c.app, 'write')() %}
+    <div class="message warning scm-learn-basics">
+      <div class="content">
+        <img src="{{g.app_static('images/git.png')}}" style="float:left">
+        <h2>New to Git?</h2>
+        <a href="http://git-scm.com/doc">Learn the basics</a>.
+      </div>
+    </div>
+
+    <div class="message error scm-empty-repo">
+      <h6>Empty Repository</h6>
+      <div class="content">
+        It looks like this Git repository doesn't have any files in it. Let's commit your project code now.  Just run the commands below.
+      </div>
+    </div>
+
+    <h2>First time using Git</h2>
+
+    <div class="codehilite">
+      <pre>cd myproject
+git init
+# add all your files.  Users can specify file names or directories instead of '.'
+git add .
+git commit -a -m 'Initial commit'
+git remote add origin {{c.app.repo.clone_url('rw', c.user.username)}}
+git push -u origin master</pre>
+    </div>
+
+    <h2>Existing repository using Git</h2>
+
+    <div class="codehilite">
+      <pre>cd myproject
+git remote add origin {{c.app.repo.clone_url('rw', c.user.username)}}
+git push -u origin master</pre>
+    </div>
+    &nbsp;
+    <div class="message info scm-ssh-key">
+      <div class="content">
+      Did you get asked for your {{config.site_name}} password during this process? You can securely use your Git repository and avoid having to re-enter your password by <a href="https://{{config.domain}}/account/ssh">setting up an ssh-key</a>.
+      </div>
+    </div>
+    {% else %}
+    <p><b>No (more) commits</b></p>
+    {% endif %}
+  {% elif c.app.repo.status == 'ready' %}
+    {% if h.has_access(c.app, 'write')() %}
+    <p>The metadata for this repository is missing.  To fix, please try a <a href="{{c.app.url}}refresh">refresh</a>.</p>
+    {% else %}
+    <p><b>No (more) commits</b></p>
+    {% endif %}
+  {% endif %}
+{% endblock %}

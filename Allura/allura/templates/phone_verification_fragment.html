@@ -1,0 +1,94 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+<!DOCTYPE html>
+<!-- Server: {{g.server_name}} -->
+{% import 'allura:templates/jinja_master/lib.html' as lib with context %}
+{% if g.theme.jinja_macros %}
+  {% import g.theme.jinja_macros as theme_macros with context %}
+{% endif %}
+{% do g.register_forge_js('js/react-with-addons' + ('' if h.asbool(tg.config.get('debug')) else '.min') + '.js',
+                          location='head_js') %}
+{% do g.register_forge_js('js/react-dom.js', location='head_js') %}
+{% do g.register_forge_js('js/jquery-base.js', location='head_js') %}
+{% do g.register_forge_js('js/phone-verification.js', location='body_js_tail') %}
+{% do g.theme.require() %}
+{% do g.resource_manager.register_widgets(c) %}
+{# paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ #}
+<!--[if lt IE 7 ]> <html lang="en" class="no-js ie6"> <![endif]-->
+<!--[if IE 7 ]>    <html lang="en" class="no-js ie7"> <![endif]-->
+<!--[if IE 8 ]>    <html lang="en" class="no-js ie8"> <![endif]-->
+<!--[if IE 9 ]>    <html lang="en" class="no-js ie9"> <![endif]-->
+<!--[if (gt IE 9)|!(IE)]>--> <html lang="en" class="no-js"> <!--<![endif]-->
+    <head>
+        {{theme_macros.extra_header(g.theme_href(''))}}
+        {% for blob in g.resource_manager.emit('head_css') %}
+          {{ blob }}
+        {% endfor %}
+        {% for blob in g.resource_manager.emit('head_js') %}
+          {{ blob }}
+        {% endfor %}
+        <style type="text/css">
+            html { overflow: hidden; }
+            body { padding-top: 1em; }
+            .error-text {
+              color: red;
+              margin-top: .5em;
+              margin-bottom: .5em;
+            }
+            .step-message { display: none; }
+        </style>
+    </head>
+    <body>
+        <div class="grid-9">
+          {# The following blocks are hidden, they're used to provide messages to React component #}
+          <div id='message-number' class='step-message'>
+            {% block phone_validation_message_number %}
+            <p>
+              In order to register a project you need to perform phone
+              validation (just this once).  Please, enter your phone number
+              below (e.g. 1-311-555-2368 or +61 8 5550 1757). You'll receive
+              an SMS message with a PIN you need to provide on the next step.
+              Your phone number will only be recorded by our SMS provider.
+              Standard SMS rates may apply.
+            </p>
+            {% endblock phone_validation_message_number %}
+          </div>
+          <div id='message-pin' class='step-message'>
+            {% block phone_validation_message_pin %}
+            <p>
+              A PIN is being sent to your phone. If you are unable to receive
+              SMS, you will get a voice call with the number.
+            </p>
+            {% endblock phone_validation_message_pin %}
+          </div>
+          <div id='message-extra' class='step-message'>
+            {% block phone_validation_message_extra %}
+            {% endblock phone_validation_message_extra %}
+          </div>
+
+          <div id="phone-verification-form">
+            {# Phone verification form will be mounted here (see phone-verification.js) #}
+          </div>
+        </div>
+
+        {% for blob in g.resource_manager.emit('body_js_tail') %}
+          {{ blob }}
+        {% endfor %}
+    </body>
+</html>

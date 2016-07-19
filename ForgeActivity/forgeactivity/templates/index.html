@@ -1,0 +1,60 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% set hide_left_bar = True %}
+{% extends g.theme.master %}
+{% import 'forgeactivity:templates/macros.html' as am with context %}
+
+{% block title %}{{c.project.name}} Activity{% endblock %}
+
+{% block header %}
+    {% if c.project.is_user_project %}
+        {% if not actor_only %}
+            Activity from people you follow
+        {% else %}
+            Activity for
+            {{c.project.user_project_of.display_name}}
+        {% endif %}
+    {% else %}
+        Activity for
+        {{c.project.name}}
+    {% endif %}
+{% endblock %}
+
+{% block actions %}
+    {{ g.icons['feed'].render(href='feed.rss', title='RSS') }}
+    {% if c.user and c.user != c.user.anonymous() and followee != c.user %}
+        {{c.follow_toggle.display(following=following)}}
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+{% do g.register_forge_js('js/jquery.viewport.js') %}
+{% do g.register_app_js('js/activity.js') %}
+
+<div class="activity">
+  {% if not timeline %}
+    No {% if page > 0 %} more {% endif %} activity to display.
+  {% else %}
+    <ul class="timeline" data-limit="{{limit}}">
+        {% include 'forgeactivity:templates/timeline.html' %}
+    </ul>
+  {% endif %}
+  {{c.page_list.display(limit=1, page=page, count=page+1, show_label=False, show_if_single_page=True, force_next=has_more)}}
+</div>
+{% endblock %}

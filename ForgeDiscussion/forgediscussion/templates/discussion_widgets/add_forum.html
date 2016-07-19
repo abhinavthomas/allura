@@ -1,0 +1,83 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% import 'allura:templates/jinja_master/lib.html' as lib with context %}
+{% if value == c.add_forum -%}
+    {% set value = {} -%}
+{% endif -%}
+<form method="{{method}}" action="{{action}}" enctype="multipart/form-data" id="add-forum">
+  <input type="hidden" name="add_forum.app_id" value="{{app and app.config._id}}">
+  <div id="add_forum_form" style="display:none">
+    <label class="grid-5">Name:</label>
+    <div class="grid-14"><input type="text" name="add_forum.name" value="{{value['name']}}"></div>
+    <label class="grid-5">Short Name:</label>
+    <div class="grid-14"><input type="text" name="add_forum.shortname" value="{{value['shortname']}}"></div>
+    <label class="grid-5">Parent Forum:</label>
+    <div class="grid-14"><select name="add_forum.parent">
+    <option value="">None</option>
+    {% for f in app.forums %}<option value="{{f._id}}">{{h.really_unicode(f.name)}}</option>{% endfor %}
+    </select></div>
+    <label class="grid-5">Description:</label>
+    <div class="grid-14"><textarea name="add_forum.description" style="height:50px;">{{value['description']}}</textarea></div>
+    <label class="grid-5">Monitoring Email:</label>
+    <div class="grid-14"><input type="text" name="add_forum.monitoring_email" value="{{value['monitoring_email']}}"></div>
+    <label class="grid-5">Developer Only:</label>
+    <div class="grid-14"><input name="add_forum.members_only" type="checkbox"{% if value['members_only'] %} checked{% endif %}></div>
+    <label class="grid-5">Allow anonymous posts:</label>
+    <div class="grid-14"><input name="add_forum.anon_posts" type="checkbox"{% if value['anon_posts'] %} checked{% endif %}></div>
+    <label class="grid-5">&nbsp;</label>
+    <div class="grid-14">
+      <input type="submit" name="create" value="Create Forum">
+      <input type="button" id="add_forum_cancel" value="Cancel">
+    </div>
+  </div>
+  {% if method.upper() == 'POST' %}{{lib.csrf_token()}}{% endif %}
+</form>
+<script type="text/javascript">
+    function addLoadEvent(func) {
+        var oldonload = window.onload;
+        if (typeof window.onload !== 'function') {
+            window.onload = func;
+        } else {
+            window.onload = function() {
+                if (oldonload) {
+                    oldonload();
+                }
+                func();
+            };
+        }
+    }
+  var has_form_errors = false;
+  {% for field in widget.fields %}
+    {% set ctx=widget.context_for(field) %}
+    {% if ctx.errors and field.show_errors -%}
+        has_form_errors = true;
+        addLoadEvent(function() {
+            $('#messages').notify("{{ctx.errors}}", {
+                title: 'Error',
+                status: 'error'
+            });
+        });
+    {%- endif %}
+  {% endfor %}
+  if (has_form_errors) {
+    addLoadEvent(function() {
+      $("#add_forum_form").show();
+    });
+  }
+</script>

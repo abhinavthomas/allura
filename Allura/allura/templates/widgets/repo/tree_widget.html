@@ -1,0 +1,74 @@
+{#-
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+-#}
+{% import 'allura:templates/jinja_master/lib.html' as lib with context %}
+<table>
+{% set ls = list(tree.ls()) %}
+  <thead>
+    <tr>
+      <th>File</th>
+      <th>Date</th>
+      <th>Author</th>
+      <th>Commit</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% if tree._parent %}
+    <tr>
+      <td></td>
+      <td><a href="..">[Up one dir]</a></td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>
+    {% endif %}
+    {% if not ls %}
+    <tr><td colspan="5">&mdash; No files &mdash;</td></tr>
+   {% endif %}
+    {% for dirent in tree.ls() %}
+    <tr>
+      <td class="nowrap">
+        {% if dirent.kind == 'DIR' %}
+          {% set icon_name = 'folder' %}
+        {% else %}
+          {% set icon_name = 'file' %}
+        {% endif %}
+        {{ g.icons[icon_name].render(
+            href=h.urlquote(dirent.href),
+            title=h.really_unicode(dirent.name),
+            show_title=True) }}
+      </td>
+      <td class="nowrap">{{lib.abbr_date(dirent.last_commit.date)}}</td>
+      <td class="nowrap">
+        {% if dirent.last_commit.author_url %}
+          <a href="{{dirent.last_commit.author_url}}">{{lib.email_gravatar(dirent.last_commit.author_email, title=h.really_unicode(dirent.last_commit.author), size=16)}}</a>
+          <a href="{{dirent.last_commit.author_url}}">{{h.really_unicode(dirent.last_commit.author)}}</a>
+        {% else %}
+          {{lib.email_gravatar(dirent.last_commit.author_email, title=h.really_unicode(dirent.last_commit.author), size=16)}} {{h.really_unicode(dirent.last_commit.author)}}
+        {% endif %}
+      </td>
+      <td>
+        <a href="{{dirent.last_commit.href}}">
+          {{dirent.last_commit.shortlink}}
+          {{dirent.last_commit.summary}}
+        </a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>

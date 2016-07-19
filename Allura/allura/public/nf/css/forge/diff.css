@@ -1,0 +1,72 @@
+/*
+       Licensed to the Apache Software Foundation (ASF) under one
+       or more contributor license agreements.  See the NOTICE file
+       distributed with this work for additional information
+       regarding copyright ownership.  The ASF licenses this file
+       to you under the Apache License, Version 2.0 (the
+       "License"); you may not use this file except in compliance
+       with the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing,
+       software distributed under the License is distributed on an
+       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       KIND, either express or implied.  See the License for the
+       specific language governing permissions and limitations
+       under the License.
+*/
+
+/* Styles for side-by-side diffs. Trying to match pygments styles for regular diffs */
+
+table.side-by-side-diff {
+  background: #f8f8f8;
+  margin: 0 !important;
+  width: 100% !important;
+  table-layout: fixed;
+}
+
+table.side-by-side-diff,
+table.side-by-side-diff tr,
+table.side-by-side-diff td,
+table.side-by-side-diff th {
+  border: 0;
+  color: gray;
+  margin: 0;
+  padding: 0;
+  vertical-align: text-top;
+}
+
+table.side-by-side-diff tr td pre {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  padding: 0;
+  margin: 0;
+}
+
+table.side-by-side-diff td { padding: 0 .2em; }
+
+/* line number */
+table.side-by-side-diff td.lineno {
+  background-color: #ebebeb;
+  padding: 0 .5em;
+  border-width: 0 1px 0 0;
+  border-style: solid;
+  border-color: #ddd;
+  width: 2em;
+}
+table.side-by-side-diff th.lineno {
+  padding: 0 .5em;
+  width: 2em;
+}
+
+/* colors */
+table.side-by-side-diff tr:hover { background-color: #eff23d; }
+
+table.side-by-side-diff tr td.diff-add { color: #000; background-color: #dfd; }
+table.side-by-side-diff tr td.diff-rem { color: #000; background-color: #fdd; }
+table.side-by-side-diff tr td.diff-chg { color: #000; background-color: #ff9; }
+table.side-by-side-diff tr td.diff-gap { background-color: #def; text-align: center; }
+table.side-by-side-diff tr td span.diff-add { color: #000; background-color: #afa; }
+table.side-by-side-diff tr td span.diff-rem { color: #000; background-color: #faa; }
+table.side-by-side-diff tr td span.diff-chg { color: #000; background-color: #eff23d; }
